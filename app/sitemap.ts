@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://invoice-studio.vercel.app";
+  const baseUrl = "https://invoice-studio-murex.vercel.app";
 
   return [
     {
