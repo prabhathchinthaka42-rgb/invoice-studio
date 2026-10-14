@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import CompanySettings, { type CompanyInfo } from "@/components/CompanySettings";
+import type { User } from "@supabase/supabase-js";
 
 type LineItem = {
   id: string;
@@ -21,8 +23,32 @@ type SavedInvoice = {
   createdAt: number;
 };
 
-const STORAGE_KEY = "invoice-studio-data";
-const COMPANY_KEY = "invoice-studio-company";
+type DBInvoiceRow = {
+  id: string;
+  user_id: string;
+  client_name: string;
+  invoice_number: string;
+  invoice_date: string | null;
+  due_date: string | null;
+  items: LineItem[];
+  status: "pending" | "paid";
+  created_at: string;
+  updated_at: string;
+};
+
+type DBCompanyRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  address: string;
+  email: string;
+  phone: string;
+  brand_color: string;
+  bank_name: string;
+  bank_account: string;
+  payment_terms: string;
+  logo: string;
+};
 
 const DEFAULT_ITEMS: LineItem[] = [
   { id: "item-1", description: "", quantity: 1, rate: 0 },
@@ -31,8 +57,8 @@ const DEFAULT_ITEMS: LineItem[] = [
 const DEFAULT_COMPANY: CompanyInfo = {
   name: "Your Company",
   address: "123 Business Street\nColombo, Sri Lanka",
-  email: "prabhathchinthaka42@gmail.com",
-  phone: "+94 77 123 4567",
+  email: "",
+  phone: "",
   brandColor: "#2563eb",
   bankName: "",
   bankAccount: "",
@@ -50,9 +76,52 @@ function formatDate(dateStr: string) {
   return `${parseInt(day)} ${monthNames[parseInt(month) - 1]} ${year}`;
 }
 
+function dbToSavedInvoice(row: DBInvoiceRow): SavedInvoice {
+  return {
+    id: row.id,
+    clientName: row.client_name,
+    invoiceNumber: row.invoice_number,
+    invoiceDate: row.invoice_date ?? "",
+    dueDate: row.due_date ?? "",
+    items: row.items ?? [],
+    status: row.status,
+    createdAt: new Date(row.created_at).getTime(),
+  };
+}
+
+function dbToCompany(row: DBCompanyRow): CompanyInfo {
+  return {
+    name: row.name,
+    address: row.address,
+    email: row.email,
+    phone: row.phone,
+    brandColor: row.brand_color,
+    bankName: row.bank_name,
+    bankAccount: row.bank_account,
+    paymentTerms: row.payment_terms,
+    logo: row.logo,
+  };
+}
+
+function companyToDb(company: CompanyInfo, userId: string) {
+  return {
+    user_id: userId,
+    name: company.name,
+    address: company.address,
+    email: company.email,
+    phone: company.phone,
+    brand_color: company.brandColor,
+    bank_name: company.bankName,
+    bank_account: company.bankAccount,
+    payment_terms: company.paymentTerms,
+    logo: company.logo,
+  };
+}
+
 export default function Home() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
+  const [user, setUser] = useState<User | null>(null);
   const [company, setCompany] = useState<CompanyInfo>(DEFAULT_COMPANY);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -66,82 +135,78 @@ export default function Home() {
 
   const [copied, setCopied] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
 
   // ============================================
-  // Load from localStorage
+  // Load user + invoices + company from Supabase
   // ============================================
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (data.current) {
-          setClientName(data.current.clientName ?? "");
-          setInvoiceNumber(data.current.invoiceNumber ?? "INV-001");
-          setInvoiceDate(data.current.invoiceDate ?? "");
-          setDueDate(data.current.dueDate ?? "");
-          setItems(data.current.items ?? DEFAULT_ITEMS);
-          setCurrentInvoiceId(data.current.currentInvoiceId ?? null);
-        }
-        if (Array.isArray(data.saved)) {
-          setSavedInvoices(data.saved);
-        }
-      }
+    const load = async () => {
+      const supabase = createClient();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+      setUser(currentUser);
 
-      const savedCompany = localStorage.getItem(COMPANY_KEY);
-      if (savedCompany) {
-        setCompany({ ...DEFAULT_COMPANY, ...JSON.parse(savedCompany) });
+      if (currentUser) {
+        // Load invoices
+        const { data: invData, error: invError } = await supabase
+          .from("invoices")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (invError) {
+          console.error("Load invoices failed:", invError);
+          setError("Failed to load invoices");
+        } else if (invData) {
+          setSavedInvoices(invData.map((row) => dbToSavedInvoice(row)));
+        }
+
+        // Load company
+        const { data: compData } = await supabase
+          .from("companies")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+
+        if (compData) {
+          setCompany(dbToCompany(compData));
+        } else {
+          // No company yet — create default one
+          const { data: newComp } = await supabase
+            .from("companies")
+            .insert({
+              ...companyToDb(DEFAULT_COMPANY, currentUser.id),
+              email: currentUser.email ?? "",
+            })
+            .select()
+            .single();
+
+          if (newComp) {
+            setCompany(dbToCompany(newComp));
+          }
+        }
       }
-    } catch (error) {
-      console.error("Load failed:", error);
-    }
-    setIsLoaded(true);
+      setIsLoaded(true);
+    };
+    load();
   }, []);
 
   // ============================================
-  // Save to localStorage
+  // Reset form when user changes
   // ============================================
   useEffect(() => {
     if (!isLoaded) return;
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          current: {
-            clientName,
-            invoiceNumber,
-            invoiceDate,
-            dueDate,
-            items,
-            currentInvoiceId,
-          },
-          saved: savedInvoices,
-        })
-      );
-    } catch (error) {
-      console.error("Save failed:", error);
-    }
-  }, [
-    isLoaded,
-    clientName,
-    invoiceNumber,
-    invoiceDate,
-    dueDate,
-    items,
-    currentInvoiceId,
-    savedInvoices,
-  ]);
-
-  // Save company separately
-  useEffect(() => {
-    if (!isLoaded) return;
-    try {
-      localStorage.setItem(COMPANY_KEY, JSON.stringify(company));
-    } catch (error) {
-      console.error("Company save failed:", error);
-    }
-  }, [isLoaded, company]);
+    setClientName("");
+    setInvoiceNumber("INV-001");
+    setInvoiceDate("");
+    setDueDate("");
+    setItems(DEFAULT_ITEMS);
+    setCurrentInvoiceId(null);
+    setError("");
+  }, [user?.id, isLoaded]);
 
   // ============================================
   // Item handlers
@@ -174,39 +239,101 @@ export default function Home() {
   );
 
   // ============================================
+  // Save Company (called from CompanySettings modal)
+  // ============================================
+  const saveCompany = async (newCompany: CompanyInfo) => {
+    if (!user) return;
+
+    // Optimistic update
+    setCompany(newCompany);
+
+    const supabase = createClient();
+    const { error: saveError } = await supabase
+      .from("companies")
+      .upsert(companyToDb(newCompany, user.id), {
+        onConflict: "user_id",
+      });
+
+    if (saveError) {
+      console.error("Save company failed:", saveError);
+      setError("Failed to save company settings");
+    }
+  };
+
+  // ============================================
   // Save Invoice
   // ============================================
-  const saveInvoice = () => {
-    const existing = currentInvoiceId
-      ? savedInvoices.find((inv) => inv.id === currentInvoiceId)
-      : null;
-
-    const invoice: SavedInvoice = {
-      id: currentInvoiceId ?? crypto.randomUUID(),
-      clientName,
-      invoiceNumber,
-      invoiceDate,
-      dueDate,
-      items,
-      status: existing?.status ?? "pending",
-      createdAt: existing?.createdAt ?? Date.now(),
-    };
-
-    if (currentInvoiceId) {
-      setSavedInvoices(
-        savedInvoices.map((inv) => (inv.id === currentInvoiceId ? invoice : inv))
-      );
-    } else {
-      setSavedInvoices([invoice, ...savedInvoices]);
-      setCurrentInvoiceId(invoice.id);
+  const saveInvoice = async () => {
+    if (!user) {
+      setError("You must be logged in to save");
+      return;
     }
 
-    setJustSaved(true);
-    setTimeout(() => setJustSaved(false), 2000);
+    setSaving(true);
+    setError("");
+
+    const supabase = createClient();
+
+    const invoiceData = {
+      client_name: clientName,
+      invoice_number: invoiceNumber,
+      invoice_date: invoiceDate || null,
+      due_date: dueDate || null,
+      items,
+      user_id: user.id,
+    };
+
+    try {
+      if (currentInvoiceId) {
+        const { data, error: updateError } = await supabase
+          .from("invoices")
+          .update(invoiceData)
+          .eq("id", currentInvoiceId)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        if (data) {
+          const updated = dbToSavedInvoice(data);
+          setSavedInvoices(
+            savedInvoices.map((inv) =>
+              inv.id === currentInvoiceId ? updated : inv
+            )
+          );
+        }
+      } else {
+        const { data, error: insertError } = await supabase
+          .from("invoices")
+          .insert(invoiceData)
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        if (data) {
+          const newInv = dbToSavedInvoice(data);
+          setSavedInvoices([newInv, ...savedInvoices]);
+          setCurrentInvoiceId(newInv.id);
+        }
+      }
+
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+    } catch (err) {
+      console.error("Save failed:", err);
+      setError(err instanceof Error ? err.message : "Failed to save invoice");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const newInvoice = () => {
-    if (!confirm("නව invoice එකක් පටන් ගන්නද? දැනට save නොකරපු දේවල් නැති වෙයි."))
+    if (
+      !confirm(
+        "නව invoice එකක් පටන් ගන්නද? දැනට save නොකරපු දේවල් නැති වෙයි."
+      )
+    )
       return;
 
     setClientName("");
@@ -215,6 +342,7 @@ export default function Home() {
     setDueDate("");
     setItems(DEFAULT_ITEMS);
     setCurrentInvoiceId(null);
+    setError("");
   };
 
   const loadInvoice = (invoice: SavedInvoice) => {
@@ -227,22 +355,54 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const deleteInvoice = (id: string) => {
+  const deleteInvoice = async (id: string) => {
     if (!confirm("මේ invoice එක delete කරන්නද?")) return;
+
+    const supabase = createClient();
+    const { error: deleteError } = await supabase
+      .from("invoices")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) {
+      console.error("Delete failed:", deleteError);
+      setError("Failed to delete invoice");
+      return;
+    }
+
     setSavedInvoices(savedInvoices.filter((inv) => inv.id !== id));
     if (currentInvoiceId === id) {
       setCurrentInvoiceId(null);
     }
   };
 
-  const toggleStatus = (id: string) => {
+  const toggleStatus = async (id: string) => {
+    const target = savedInvoices.find((inv) => inv.id === id);
+    if (!target) return;
+
+    const newStatus = target.status === "paid" ? "pending" : "paid";
+
     setSavedInvoices(
       savedInvoices.map((inv) =>
-        inv.id === id
-          ? { ...inv, status: inv.status === "paid" ? "pending" : "paid" }
-          : inv
+        inv.id === id ? { ...inv, status: newStatus } : inv
       )
     );
+
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("invoices")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (updateError) {
+      console.error("Toggle failed:", updateError);
+      setSavedInvoices(
+        savedInvoices.map((inv) =>
+          inv.id === id ? { ...inv, status: target.status } : inv
+        )
+      );
+      setError("Failed to update status");
+    }
   };
 
   // ============================================
@@ -311,7 +471,11 @@ ${company.paymentTerms}`;
             <h1 className="text-3xl font-bold text-gray-900">
               🧾 Invoice Studio
             </h1>
-            <p className="text-gray-600">Create invoices in seconds</p>
+            <p className="text-gray-600">
+              {user?.email
+                ? `Signed in as ${user.email}`
+                : "Create invoices in seconds"}
+            </p>
           </div>
           <div className="flex gap-2">
             <button
@@ -328,16 +492,34 @@ ${company.paymentTerms}`;
             </button>
             <button
               onClick={saveInvoice}
-              className={`text-sm px-4 py-2 font-medium rounded-lg transition-colors ${
+              disabled={saving}
+              className={`text-sm px-4 py-2 font-medium rounded-lg transition-colors disabled:opacity-50 ${
                 justSaved
                   ? "bg-green-100 text-green-800 border border-green-300"
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
-              {justSaved ? "✓ Saved!" : "💾 Save Invoice"}
+              {saving
+                ? "Saving..."
+                : justSaved
+                ? "✓ Saved!"
+                : "💾 Save Invoice"}
             </button>
           </div>
         </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex justify-between items-center">
+            <p className="text-sm text-red-700">{error}</p>
+            <button
+              onClick={() => setError("")}
+              className="text-red-500 hover:text-red-700 text-lg leading-none"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* LEFT: Form */}
@@ -499,7 +681,6 @@ ${company.paymentTerms}`;
               ref={invoiceRef}
               className="pdf-invoice bg-white shadow-xl rounded-lg p-10 text-gray-900"
             >
-              {/* Header — now uses company state */}
               <div className="flex justify-between items-start mb-10">
                 <div>
                   {company.logo && (
@@ -513,14 +694,15 @@ ${company.paymentTerms}`;
                   <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">
                     {company.address}
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {company.email}
-                  </p>
+                  {company.email && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      {company.email}
+                    </p>
+                  )}
                   {company.phone && (
                     <p className="text-sm text-gray-600">{company.phone}</p>
                   )}
                 </div>
-                
                 <div className="text-right">
                   <h1
                     className="text-4xl font-bold tracking-tight"
@@ -614,7 +796,6 @@ ${company.paymentTerms}`;
                 </div>
               </div>
 
-              {/* Bank Details (if provided) */}
               {(company.bankName || company.bankAccount) && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -622,7 +803,8 @@ ${company.paymentTerms}`;
                   </p>
                   {company.bankName && (
                     <p className="text-sm text-gray-700">
-                      Bank: <span className="font-medium">{company.bankName}</span>
+                      Bank:{" "}
+                      <span className="font-medium">{company.bankName}</span>
                     </p>
                   )}
                   {company.bankAccount && (
@@ -663,7 +845,7 @@ ${company.paymentTerms}`;
 
           {savedInvoices.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              තාම invoices save කරලා නෑ. උඩ "💾 Save Invoice" button එක ඔබන්න!
+              තාම invoices save කරලා නෑ. උඩ &quot;💾 Save Invoice&quot; button එක ඔබන්න!
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -732,11 +914,11 @@ ${company.paymentTerms}`;
         </div>
       </div>
 
-      {/* ⭐ Company Settings Modal */}
+      {/* Company Settings Modal */}
       {showSettings && (
         <CompanySettings
           company={company}
-          onSave={setCompany}
+          onSave={saveCompany}
           onClose={() => setShowSettings(false)}
         />
       )}
