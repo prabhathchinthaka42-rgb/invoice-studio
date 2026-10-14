@@ -13,8 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  // ⚠️ මේක ඔබේ deployment එකෙන් පස්සේ අලුත් URL එකට මාරු කරන්න
   metadataBase: new URL("https://invoice-studio-murex.vercel.app"),
+  verification: {
+    google: "3pR1XgnFLjQ3ZBRZARRqrgVOKeFHTlVASUQwiftQ_p0",
+  },
   title: {
     default: "Invoice Studio — Invoices in Seconds",
     template: "%s | Invoice Studio",
