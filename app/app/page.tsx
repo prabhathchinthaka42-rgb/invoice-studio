@@ -1132,15 +1132,50 @@ ${company.paymentTerms}${watermark}`;
               </ul>
             </div>
 
-            <button
-              onClick={() => {
-                alert("Stripe payments ඉදිරියේදී එනවා! පස්සේ try කරන්න.");
-                setShowUpgradeModal(false);
-              }}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all mb-2"
-            >
-              Upgrade to Pro — $5/month
-            </button>
+<button
+  onClick={async () => {
+    if (!user?.email) {
+      alert("Please sign in first");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_cart: [
+            {
+              product_id: "pdt_0NpmLub4sWRnkMX96ubJB",
+              quantity: 1,
+            },
+          ],
+          customer: {
+            email: user.email,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      // Debug — මොකද එන්නේ කියලා බලන්න
+      console.log("Checkout response:", data);
+
+      const checkoutUrl = data.checkout_url || data.url;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        alert("Failed to create checkout session. Check console for details.");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  }}
+  className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all mb-2"
+>
+  Upgrade to Pro — $5/month
+</button>
             <button
               onClick={() => setShowUpgradeModal(false)}
               className="w-full py-2 text-gray-600 hover:text-gray-900 text-sm"
