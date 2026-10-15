@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import CompanySettings, { type CompanyInfo } from "@/components/CompanySettings";
+import {
+  canCreateInvoice,
+  countInvoicesThisMonth,
+  getLimitMessage,
+  getRemainingInvoices,
+} from "@/lib/plan-limits";
 import type { User } from "@supabase/supabase-js";
 
 type LineItem = {
@@ -15,18 +21,23 @@ type LineItem = {
 type SavedInvoice = {
   id: string;
   clientName: string;
+  clientAddress: string;       // ⭐ NEW
+  clientCity: string;          // ⭐ NEW
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string;
   items: LineItem[];
   status: "pending" | "paid";
   createdAt: number;
+  deletedAt: number | null;
 };
 
 type DBInvoiceRow = {
   id: string;
   user_id: string;
   client_name: string;
+  client_address: string;      // ⭐ NEW
+  client_city: string;         // ⭐ NEW
   invoice_number: string;
   invoice_date: string | null;
   due_date: string | null;
@@ -34,6 +45,7 @@ type DBInvoiceRow = {
   status: "pending" | "paid";
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 };
 
 type DBCompanyRow = {
@@ -48,6 +60,8 @@ type DBCompanyRow = {
   bank_account: string;
   payment_terms: string;
   logo: string;
+  plan: "free" | "pro";
+  pro_since: string | null;
 };
 
 const DEFAULT_ITEMS: LineItem[] = [
@@ -64,6 +78,7 @@ const DEFAULT_COMPANY: CompanyInfo = {
   bankAccount: "",
   paymentTerms: "Payment due within 14 days",
   logo: "",
+  plan: "free",
 };
 
 function formatDate(dateStr: string) {
@@ -80,12 +95,15 @@ function dbToSavedInvoice(row: DBInvoiceRow): SavedInvoice {
   return {
     id: row.id,
     clientName: row.client_name,
+    clientAddress: row.client_address ?? "",   // ⭐ NEW
+    clientCity: row.client_city ?? "",         // ⭐ NEW
     invoiceNumber: row.invoice_number,
     invoiceDate: row.invoice_date ?? "",
     dueDate: row.due_date ?? "",
     items: row.items ?? [],
     status: row.status,
     createdAt: new Date(row.created_at).getTime(),
+    deletedAt: row.deleted_at ? new Date(row.deleted_at).getTime() : null,
   };
 }
 
@@ -100,6 +118,7 @@ function dbToCompany(row: DBCompanyRow): CompanyInfo {
     bankAccount: row.bank_account,
     paymentTerms: row.payment_terms,
     logo: row.logo,
+    plan: row.plan,
   };
 }
 
@@ -124,8 +143,11 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [company, setCompany] = useState<CompanyInfo>(DEFAULT_COMPANY);
   const [showSettings, setShowSettings] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [clientName, setClientName] = useState("");
+  const [clientAddress, setClientAddress] = useState("");   // ⭐ NEW
+  const [clientCity, setClientCity] = useState("");         // ⭐ NEW
   const [invoiceNumber, setInvoiceNumber] = useState("INV-001");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -138,9 +160,28 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [referenceTime, setReferenceTime] = useState(0);   // ⭐ NEW
+
+  // ⭐ Set reference time on client mount
+  useEffect(() => {
+    setReferenceTime(Date.now());
+    // Update every 60 seconds (handle month boundaries)
+    const interval = setInterval(() => setReferenceTime(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ⭐ Derived values (now pass referenceTime)
+  const isPro = company.plan === "pro";
+  const monthlyCount = countInvoicesThisMonth(savedInvoices, referenceTime);
+  const remaining = getRemainingInvoices(company.plan, monthlyCount);
+  const canSave = canCreateInvoice(company.plan, monthlyCount);
+  const limitMessage = getLimitMessage(company.plan, monthlyCount);
+
+  // ⭐ Visible invoices (soft-deleted ones are hidden)
+  const visibleInvoices = savedInvoices.filter((inv) => inv.deletedAt === null);
 
   // ============================================
-  // Load user + invoices + company from Supabase
+  // Load user + invoices + company
   // ============================================
   useEffect(() => {
     const load = async () => {
@@ -151,7 +192,6 @@ export default function Home() {
       setUser(currentUser);
 
       if (currentUser) {
-        // Load invoices
         const { data: invData, error: invError } = await supabase
           .from("invoices")
           .select("*")
@@ -164,7 +204,6 @@ export default function Home() {
           setSavedInvoices(invData.map((row) => dbToSavedInvoice(row)));
         }
 
-        // Load company
         const { data: compData } = await supabase
           .from("companies")
           .select("*")
@@ -174,7 +213,6 @@ export default function Home() {
         if (compData) {
           setCompany(dbToCompany(compData));
         } else {
-          // No company yet — create default one
           const { data: newComp } = await supabase
             .from("companies")
             .insert({
@@ -194,12 +232,12 @@ export default function Home() {
     load();
   }, []);
 
-  // ============================================
   // Reset form when user changes
-  // ============================================
   useEffect(() => {
     if (!isLoaded) return;
     setClientName("");
+    setClientAddress("");   // ⭐ NEW
+    setClientCity("");      // ⭐ NEW
     setInvoiceNumber("INV-001");
     setInvoiceDate("");
     setDueDate("");
@@ -239,12 +277,10 @@ export default function Home() {
   );
 
   // ============================================
-  // Save Company (called from CompanySettings modal)
+  // Save Company
   // ============================================
   const saveCompany = async (newCompany: CompanyInfo) => {
     if (!user) return;
-
-    // Optimistic update
     setCompany(newCompany);
 
     const supabase = createClient();
@@ -261,11 +297,17 @@ export default function Home() {
   };
 
   // ============================================
-  // Save Invoice
+  // Save Invoice (with limit check)
   // ============================================
   const saveInvoice = async () => {
     if (!user) {
       setError("You must be logged in to save");
+      return;
+    }
+
+    // ⭐ Check limit only for NEW invoices
+    if (!currentInvoiceId && !canSave) {
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -276,6 +318,8 @@ export default function Home() {
 
     const invoiceData = {
       client_name: clientName,
+      client_address: clientAddress,   // ⭐ NEW
+      client_city: clientCity,         // ⭐ NEW
       invoice_number: invoiceNumber,
       invoice_date: invoiceDate || null,
       due_date: dueDate || null,
@@ -337,6 +381,8 @@ export default function Home() {
       return;
 
     setClientName("");
+    setClientAddress("");   // ⭐ NEW
+    setClientCity("");      // ⭐ NEW
     setInvoiceNumber("INV-001");
     setInvoiceDate("");
     setDueDate("");
@@ -347,6 +393,8 @@ export default function Home() {
 
   const loadInvoice = (invoice: SavedInvoice) => {
     setClientName(invoice.clientName);
+    setClientAddress(invoice.clientAddress);   // ⭐ NEW
+    setClientCity(invoice.clientCity);         // ⭐ NEW
     setInvoiceNumber(invoice.invoiceNumber);
     setInvoiceDate(invoice.invoiceDate);
     setDueDate(invoice.dueDate);
@@ -359,10 +407,13 @@ export default function Home() {
     if (!confirm("මේ invoice එක delete කරන්නද?")) return;
 
     const supabase = createClient();
-    const { error: deleteError } = await supabase
+    // ⭐ SOFT DELETE — mark as deleted instead of removing
+    const { data, error: deleteError } = await supabase
       .from("invoices")
-      .delete()
-      .eq("id", id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
 
     if (deleteError) {
       console.error("Delete failed:", deleteError);
@@ -370,9 +421,16 @@ export default function Home() {
       return;
     }
 
-    setSavedInvoices(savedInvoices.filter((inv) => inv.id !== id));
-    if (currentInvoiceId === id) {
-      setCurrentInvoiceId(null);
+    if (data) {
+      // Update local state — keep in array (for counting), mark as deleted
+      setSavedInvoices(
+        savedInvoices.map((inv) =>
+          inv.id === id ? dbToSavedInvoice(data) : inv
+        )
+      );
+      if (currentInvoiceId === id) {
+        setCurrentInvoiceId(null);
+      }
     }
   };
 
@@ -410,6 +468,13 @@ export default function Home() {
   // ============================================
   const downloadPDF = async () => {
     if (!invoiceRef.current) return;
+
+    // ⭐ Block PDF download for Free users after limit reached (unsaved invoice)
+    if (!currentInvoiceId && !canSave) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     const html2pdf = (await import("html2pdf.js")).default;
     const opt = {
       margin: 0,
@@ -432,11 +497,17 @@ export default function Home() {
       )
       .join("\n\n");
 
+    const watermark = !isPro ? "\n\n— Made with Invoice Studio —" : "";
+
+    const addressLine = clientAddress
+      ? `${clientAddress}${clientCity ? `, ${clientCity}` : ""}`
+      : clientCity || "";
+
     const text = `🧾 INVOICE #${invoiceNumber || "INV-001"}
 
 From: ${company.name}
 
-Bill To: ${clientName || "(no client)"}
+Bill To: ${clientName || "(no client)"}${addressLine ? `\n        ${addressLine}` : ""}
 
 ──────────────────
 ${itemLines || "(no items)"}
@@ -447,7 +518,7 @@ TOTAL: ${total.toLocaleString()}
 Issue Date: ${formatDate(invoiceDate)}
 Due Date: ${formatDate(dueDate)}
 
-${company.paymentTerms}`;
+${company.paymentTerms}${watermark}`;
 
     await navigator.clipboard.writeText(text);
     setCopied(true);
@@ -466,18 +537,62 @@ ${company.paymentTerms}`;
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
+        <div className="mb-8 flex justify-between items-start flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              🧾 Invoice Studio
-            </h1>
-            <p className="text-gray-600">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-gray-900">
+                🧾 Invoice Studio
+              </h1>
+              {isPro ? (
+                <span className="text-xs px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold">
+                  ⭐ PRO
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded-full font-medium">
+                  Free
+                </span>
+              )}
+            </div>
+            <p className="text-gray-600 text-sm mt-1">
               {user?.email
                 ? `Signed in as ${user.email}`
                 : "Create invoices in seconds"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center flex-wrap">
+            {/* ⭐ Usage Badge */}
+            {!isPro && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
+                <div className="text-xs text-gray-600">{limitMessage}</div>
+                <div
+                  className={`text-xs font-bold ${
+                    remaining === 0
+                      ? "text-red-600"
+                      : remaining <= 2
+                      ? "text-yellow-600"
+                      : "text-green-600"
+                  }`}
+                >
+                  {remaining === 0
+                    ? "Limit reached"
+                    : `${remaining} left`}
+                </div>
+                {remaining === 0 && (
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="text-xs px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded font-semibold hover:from-blue-700 hover:to-purple-700"
+                  >
+                    Upgrade
+                  </button>
+                )}
+              </div>
+            )}
+            {isPro && (
+              <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg text-xs text-gray-700 font-medium">
+                ✨ Unlimited invoices
+              </div>
+            )}
+
             <button
               onClick={() => setShowSettings(true)}
               className="text-sm px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium"
@@ -492,17 +607,21 @@ ${company.paymentTerms}`;
             </button>
             <button
               onClick={saveInvoice}
-              disabled={saving}
-              className={`text-sm px-4 py-2 font-medium rounded-lg transition-colors disabled:opacity-50 ${
+              disabled={saving || (!currentInvoiceId && !canSave)}
+              className={`text-sm px-4 py-2 font-medium rounded-lg transition-colors disabled:cursor-not-allowed ${
                 justSaved
                   ? "bg-green-100 text-green-800 border border-green-300"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  : !currentInvoiceId && !canSave
+                  ? "bg-gray-200 text-gray-500"
+                  : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
               }`}
             >
               {saving
                 ? "Saving..."
                 : justSaved
                 ? "✓ Saved!"
+                : !currentInvoiceId && !canSave
+                ? "🔒 Upgrade to Save"
                 : "💾 Save Invoice"}
             </button>
           </div>
@@ -537,6 +656,34 @@ ${company.paymentTerms}`;
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="Enter client name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* ⭐ NEW: Client Address */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client Address
+              </label>
+              <input
+                type="text"
+                value={clientAddress}
+                onChange={(e) => setClientAddress(e.target.value)}
+                placeholder="e.g. 123 Main Street"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* ⭐ NEW: Client City */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client City
+              </label>
+              <input
+                type="text"
+                value={clientCity}
+                onChange={(e) => setClientCity(e.target.value)}
+                placeholder="e.g. Colombo"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -683,7 +830,7 @@ ${company.paymentTerms}`;
             >
               <div className="flex justify-between items-start mb-10">
                 <div>
-                  {company.logo && (
+                  {company.logo && isPro && (
                     <img
                       src={company.logo}
                       alt={company.name}
@@ -706,7 +853,7 @@ ${company.paymentTerms}`;
                 <div className="text-right">
                   <h1
                     className="text-4xl font-bold tracking-tight"
-                    style={{ color: company.brandColor }}
+                    style={{ color: isPro ? company.brandColor : "#2563eb" }}
                   >
                     INVOICE
                   </h1>
@@ -724,8 +871,12 @@ ${company.paymentTerms}`;
                   <p className="font-semibold text-base">
                     {clientName || "Client Name"}
                   </p>
-                  <p className="text-sm text-gray-600">Client Address</p>
-                  <p className="text-sm text-gray-600">Client City</p>
+                  <p className="text-sm text-gray-600 whitespace-pre-line">
+                    {clientAddress || "Client Address"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {clientCity || "Client City"}
+                  </p>
                 </div>
                 <div className="text-right text-sm space-y-2">
                   <div>
@@ -788,7 +939,7 @@ ${company.paymentTerms}`;
                     <span>Total</span>
                     <span
                       className="tabular-nums"
-                      style={{ color: company.brandColor }}
+                      style={{ color: isPro ? company.brandColor : "#2563eb" }}
                     >
                       {total.toLocaleString()}
                     </span>
@@ -826,6 +977,19 @@ ${company.paymentTerms}`;
                   {company.paymentTerms}
                 </p>
               </div>
+
+              {/* ⭐ WATERMARK for Free users */}
+              {!isPro && (
+                <div className="mt-6 pt-3 border-t border-dashed border-gray-300 text-center">
+                  <p className="text-[10px] text-gray-400 font-medium tracking-wide">
+                    Made with{" "}
+                    <span className="font-semibold text-gray-500">
+                      🧾 Invoice Studio
+                    </span>{" "}
+                    · Upgrade to remove
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -835,21 +999,21 @@ ${company.paymentTerms}`;
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
               📁 Saved Invoices
-              {savedInvoices.length > 0 && (
+              {visibleInvoices.length > 0 && (
                 <span className="ml-2 text-base font-normal text-gray-500">
-                  ({savedInvoices.length})
+                  ({visibleInvoices.length})
                 </span>
               )}
             </h2>
           </div>
 
-          {savedInvoices.length === 0 ? (
+          {visibleInvoices.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
               තාම invoices save කරලා නෑ. උඩ &quot;💾 Save Invoice&quot; button එක ඔබන්න!
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {savedInvoices.map((inv) => {
+              {visibleInvoices.map((inv) => {
                 const invTotal = inv.items.reduce(
                   (sum, item) => sum + item.quantity * item.rate,
                   0
@@ -921,6 +1085,70 @@ ${company.paymentTerms}`;
           onSave={saveCompany}
           onClose={() => setShowSettings(false)}
         />
+      )}
+
+      {/* ⭐ Upgrade Modal */}
+      {showUpgradeModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setShowUpgradeModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl">⭐</span>
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              You've reached your limit
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Free plan එකට මාසෙකට invoices {getRemainingInvoices("free", 0)}ක්
+              විතරයි. ඔබ දැන් ඔබේ limit එකට ඇවිත්!
+            </p>
+
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm font-semibold text-gray-900 mb-3">
+                ⭐ Pro plan එකෙන් ලැබෙන දේ:
+              </p>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span> Unlimited invoices
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span> No watermark
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span> Custom brand colors
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span> Company logo
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-600">✓</span> Tools tab access
+                </li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => {
+                alert("Stripe payments ඉදිරියේදී එනවා! පස්සේ try කරන්න.");
+                setShowUpgradeModal(false);
+              }}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all mb-2"
+            >
+              Upgrade to Pro — $5/month
+            </button>
+            <button
+              onClick={() => setShowUpgradeModal(false)}
+              className="w-full py-2 text-gray-600 hover:text-gray-900 text-sm"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

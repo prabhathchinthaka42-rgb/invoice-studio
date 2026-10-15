@@ -11,7 +11,8 @@ export type CompanyInfo = {
   bankName: string;
   bankAccount: string;
   paymentTerms: string;
-  logo: string; // ⭐ Base64 data URL (හෝ empty string)
+  logo: string;
+  plan: "free" | "pro";
 };
 
 type Props = {
@@ -27,6 +28,8 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
   const [logoError, setLogoError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isPro = form.plan === "pro";
+
   const update = (field: keyof CompanyInfo, value: string) => {
     setForm({ ...form, [field]: value });
   };
@@ -36,19 +39,16 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Size check
     if (file.size > MAX_LOGO_SIZE) {
       setLogoError("Logo file must be under 1 MB");
       return;
     }
 
-    // Type check
     if (!file.type.startsWith("image/")) {
       setLogoError("Please select an image file (PNG, JPG, SVG)");
       return;
     }
 
-    // FileReader — read file as base64 data URL
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
@@ -82,10 +82,21 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white">
-          <h2 className="text-xl font-semibold text-gray-900">
-            ⚙️ Company Settings
-          </h2>
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-900">
+              ⚙️ Company Settings
+            </h2>
+            {isPro ? (
+              <span className="text-xs px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold">
+                ⭐ PRO
+              </span>
+            ) : (
+              <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded-full font-medium">
+                Free Plan
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
@@ -96,24 +107,38 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
 
         {/* Body */}
         <div className="p-6 space-y-5">
-          {/* ⭐ Logo Upload Section */}
+          {/* ⭐ Logo Upload Section (Pro only) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Company Logo
-            </label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Company Logo
+              </label>
+              {!isPro && (
+                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">
+                  ⭐ PRO
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-4">
               {/* Preview */}
-              <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+              <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden relative">
                 {form.logo ? (
                   <img
                     src={form.logo}
                     alt="Logo preview"
-                    className="max-w-full max-h-full object-contain"
+                    className={`max-w-full max-h-full object-contain ${
+                      !isPro ? "opacity-40" : ""
+                    }`}
                   />
                 ) : (
                   <span className="text-xs text-gray-400 text-center px-2">
                     No logo
                   </span>
+                )}
+                {!isPro && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl">🔒</span>
+                  </div>
                 )}
               </div>
 
@@ -125,15 +150,17 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
                   accept="image/*"
                   onChange={handleLogoUpload}
                   className="hidden"
+                  disabled={!isPro}
                 />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-medium text-sm"
+                  disabled={!isPro}
+                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                 >
-                  📤 Upload Logo
+                  {isPro ? "📤 Upload Logo" : "🔒 Upgrade to Upload"}
                 </button>
-                {form.logo && (
+                {form.logo && isPro && (
                   <button
                     type="button"
                     onClick={removeLogo}
@@ -148,7 +175,9 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
               <p className="text-red-600 text-sm mt-2">{logoError}</p>
             )}
             <p className="text-xs text-gray-500 mt-2">
-              Max 1 MB · PNG, JPG, or SVG
+              {isPro
+                ? "Max 1 MB · PNG, JPG, or SVG"
+                : "Upgrade to Pro to add your company logo"}
             </p>
           </div>
 
@@ -166,15 +195,30 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Brand Color
-              </label>
-              <input
-                type="color"
-                value={form.brandColor}
-                onChange={(e) => update("brandColor", e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-              />
+              <div className="flex items-center gap-2 mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Brand Color
+                </label>
+                {!isPro && (
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">
+                    ⭐ PRO
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="color"
+                  value={form.brandColor}
+                  onChange={(e) => update("brandColor", e.target.value)}
+                  disabled={!isPro}
+                  className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                {!isPro && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 rounded-lg">
+                    <span className="text-lg">🔒</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -263,6 +307,31 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          {/* Upgrade CTA for Free users */}
+          {!isPro && (
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    ⭐ Unlock Pro features
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Logo upload · Custom brand colors · Unlimited invoices
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert("Stripe payments ඉදිරියේදී එනවා! පස්සේ try කරන්න.");
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all text-sm whitespace-nowrap"
+                >
+                  Upgrade →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
