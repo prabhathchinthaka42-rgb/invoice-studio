@@ -1,5 +1,5 @@
 import { Webhooks } from "@dodopayments/nextjs";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export const POST = Webhooks({
   webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_SECRET!,
@@ -40,7 +40,7 @@ export const POST = Webhooks({
 
       console.log(`👤 Upgrading user: ${customerEmail}`);
 
-      const supabase = await createClient();
+      const supabase = createServiceClient();
 
       const { error } = await supabase
         .from("companies")
