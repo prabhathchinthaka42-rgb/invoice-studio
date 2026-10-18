@@ -19,11 +19,17 @@ type Props = {
   company: CompanyInfo;
   onSave: (company: CompanyInfo) => void;
   onClose: () => void;
+  onUpgrade: () => void;
 };
 
 const MAX_LOGO_SIZE = 1 * 1024 * 1024; // 1 MB
 
-export default function CompanySettings({ company, onSave, onClose }: Props) {
+export default function CompanySettings({
+  company,
+  onSave,
+  onClose,
+  onUpgrade,
+}: Props) {
   const [form, setForm] = useState<CompanyInfo>(company);
   const [logoError, setLogoError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +113,7 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
 
         {/* Body */}
         <div className="p-6 space-y-5">
-          {/* ⭐ Logo Upload Section (Pro only) */}
+          {/* Logo Upload */}
           <div>
             <div className="flex items-center gap-2 mb-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -120,7 +126,6 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
               )}
             </div>
             <div className="flex items-center gap-4">
-              {/* Preview */}
               <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden relative">
                 {form.logo ? (
                   <img
@@ -142,7 +147,6 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
                 )}
               </div>
 
-              {/* Buttons */}
               <div className="flex flex-col gap-2">
                 <input
                   ref={fileInputRef}
@@ -323,7 +327,8 @@ export default function CompanySettings({ company, onSave, onClose }: Props) {
                 <button
                   type="button"
                   onClick={() => {
-                    alert("Stripe payments ඉදිරියේදී එනවා! පස්සේ try කරන්න.");
+                    onClose();
+                    onUpgrade();
                   }}
                   className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all text-sm whitespace-nowrap"
                 >

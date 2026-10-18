@@ -11,6 +11,9 @@ import {
 } from "@/lib/plan-limits";
 import type { User } from "@supabase/supabase-js";
 
+// ============================================
+// Types
+// ============================================
 type LineItem = {
   id: string;
   description: string;
@@ -21,8 +24,8 @@ type LineItem = {
 type SavedInvoice = {
   id: string;
   clientName: string;
-  clientAddress: string;       // ⭐ NEW
-  clientCity: string;          // ⭐ NEW
+  clientAddress: string;
+  clientCity: string;
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string;
@@ -36,8 +39,8 @@ type DBInvoiceRow = {
   id: string;
   user_id: string;
   client_name: string;
-  client_address: string;      // ⭐ NEW
-  client_city: string;         // ⭐ NEW
+  client_address: string;
+  client_city: string;
   invoice_number: string;
   invoice_date: string | null;
   due_date: string | null;
@@ -64,6 +67,9 @@ type DBCompanyRow = {
   pro_since: string | null;
 };
 
+// ============================================
+// Constants
+// ============================================
 const DEFAULT_ITEMS: LineItem[] = [
   { id: "item-1", description: "", quantity: 1, rate: 0 },
 ];
@@ -81,6 +87,11 @@ const DEFAULT_COMPANY: CompanyInfo = {
   plan: "free",
 };
 
+const DODO_PRODUCT_ID = "pdt_0NpmLub4sWRnkMX96ubJB"; // ⚠️ Live mode එකේදී වෙනස් කරන්න
+
+// ============================================
+// Helper Functions
+// ============================================
 function formatDate(dateStr: string) {
   if (!dateStr) return "—";
   const [year, month, day] = dateStr.split("-");
@@ -95,8 +106,8 @@ function dbToSavedInvoice(row: DBInvoiceRow): SavedInvoice {
   return {
     id: row.id,
     clientName: row.client_name,
-    clientAddress: row.client_address ?? "",   // ⭐ NEW
-    clientCity: row.client_city ?? "",         // ⭐ NEW
+    clientAddress: row.client_address ?? "",
+    clientCity: row.client_city ?? "",
     invoiceNumber: row.invoice_number,
     invoiceDate: row.invoice_date ?? "",
     dueDate: row.due_date ?? "",
@@ -137,6 +148,9 @@ function companyToDb(company: CompanyInfo, userId: string) {
   };
 }
 
+// ============================================
+// Main Component
+// ============================================
 export default function Home() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -146,8 +160,8 @@ export default function Home() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [clientName, setClientName] = useState("");
-  const [clientAddress, setClientAddress] = useState("");   // ⭐ NEW
-  const [clientCity, setClientCity] = useState("");         // ⭐ NEW
+  const [clientAddress, setClientAddress] = useState("");
+  const [clientCity, setClientCity] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("INV-001");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -160,29 +174,27 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [referenceTime, setReferenceTime] = useState(0);   // ⭐ NEW
+  const [referenceTime, setReferenceTime] = useState(0);
 
-  // ⭐ Set reference time on client mount
-  useEffect(() => {
-    setReferenceTime(Date.now());
-    // Update every 60 seconds (handle month boundaries)
-    const interval = setInterval(() => setReferenceTime(Date.now()), 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // ⭐ Derived values (now pass referenceTime)
+  // ============================================
+  // Derived Values
+  // ============================================
   const isPro = company.plan === "pro";
   const monthlyCount = countInvoicesThisMonth(savedInvoices, referenceTime);
   const remaining = getRemainingInvoices(company.plan, monthlyCount);
   const canSave = canCreateInvoice(company.plan, monthlyCount);
   const limitMessage = getLimitMessage(company.plan, monthlyCount);
-
-  // ⭐ Visible invoices (soft-deleted ones are hidden)
   const visibleInvoices = savedInvoices.filter((inv) => inv.deletedAt === null);
 
   // ============================================
-  // Load user + invoices + company
+  // Effects
   // ============================================
+  useEffect(() => {
+    setReferenceTime(Date.now());
+    const interval = setInterval(() => setReferenceTime(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
@@ -232,12 +244,11 @@ export default function Home() {
     load();
   }, []);
 
-  // Reset form when user changes
   useEffect(() => {
     if (!isLoaded) return;
     setClientName("");
-    setClientAddress("");   // ⭐ NEW
-    setClientCity("");      // ⭐ NEW
+    setClientAddress("");
+    setClientCity("");
     setInvoiceNumber("INV-001");
     setInvoiceDate("");
     setDueDate("");
@@ -247,7 +258,7 @@ export default function Home() {
   }, [user?.id, isLoaded]);
 
   // ============================================
-  // Item handlers
+  // Item Handlers
   // ============================================
   const updateItem = (
     index: number,
@@ -277,6 +288,47 @@ export default function Home() {
   );
 
   // ============================================
+  // Upgrade Handler (Dodo Checkout)
+  // ============================================
+  const handleUpgrade = async () => {
+    if (!user?.email) {
+      alert("Please sign in first");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_cart: [
+            {
+              product_id: DODO_PRODUCT_ID,
+              quantity: 1,
+            },
+          ],
+          customer: {
+            email: user.email,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      console.log("Checkout response:", data);
+
+      const checkoutUrl = data.checkout_url || data.url;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        alert("Failed to create checkout session. Check console for details.");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
+  // ============================================
   // Save Company
   // ============================================
   const saveCompany = async (newCompany: CompanyInfo) => {
@@ -297,7 +349,7 @@ export default function Home() {
   };
 
   // ============================================
-  // Save Invoice (with limit check)
+  // Save Invoice
   // ============================================
   const saveInvoice = async () => {
     if (!user) {
@@ -305,7 +357,6 @@ export default function Home() {
       return;
     }
 
-    // ⭐ Check limit only for NEW invoices
     if (!currentInvoiceId && !canSave) {
       setShowUpgradeModal(true);
       return;
@@ -318,8 +369,8 @@ export default function Home() {
 
     const invoiceData = {
       client_name: clientName,
-      client_address: clientAddress,   // ⭐ NEW
-      client_city: clientCity,         // ⭐ NEW
+      client_address: clientAddress,
+      client_city: clientCity,
       invoice_number: invoiceNumber,
       invoice_date: invoiceDate || null,
       due_date: dueDate || null,
@@ -381,8 +432,8 @@ export default function Home() {
       return;
 
     setClientName("");
-    setClientAddress("");   // ⭐ NEW
-    setClientCity("");      // ⭐ NEW
+    setClientAddress("");
+    setClientCity("");
     setInvoiceNumber("INV-001");
     setInvoiceDate("");
     setDueDate("");
@@ -393,8 +444,8 @@ export default function Home() {
 
   const loadInvoice = (invoice: SavedInvoice) => {
     setClientName(invoice.clientName);
-    setClientAddress(invoice.clientAddress);   // ⭐ NEW
-    setClientCity(invoice.clientCity);         // ⭐ NEW
+    setClientAddress(invoice.clientAddress);
+    setClientCity(invoice.clientCity);
     setInvoiceNumber(invoice.invoiceNumber);
     setInvoiceDate(invoice.invoiceDate);
     setDueDate(invoice.dueDate);
@@ -407,7 +458,6 @@ export default function Home() {
     if (!confirm("මේ invoice එක delete කරන්නද?")) return;
 
     const supabase = createClient();
-    // ⭐ SOFT DELETE — mark as deleted instead of removing
     const { data, error: deleteError } = await supabase
       .from("invoices")
       .update({ deleted_at: new Date().toISOString() })
@@ -422,7 +472,6 @@ export default function Home() {
     }
 
     if (data) {
-      // Update local state — keep in array (for counting), mark as deleted
       setSavedInvoices(
         savedInvoices.map((inv) =>
           inv.id === id ? dbToSavedInvoice(data) : inv
@@ -469,7 +518,6 @@ export default function Home() {
   const downloadPDF = async () => {
     if (!invoiceRef.current) return;
 
-    // ⭐ Block PDF download for Free users after limit reached (unsaved invoice)
     if (!currentInvoiceId && !canSave) {
       setShowUpgradeModal(true);
       return;
@@ -499,15 +547,11 @@ export default function Home() {
 
     const watermark = !isPro ? "\n\n— Made with Invoice Studio —" : "";
 
-    const addressLine = clientAddress
-      ? `${clientAddress}${clientCity ? `, ${clientCity}` : ""}`
-      : clientCity || "";
-
     const text = `🧾 INVOICE #${invoiceNumber || "INV-001"}
 
 From: ${company.name}
 
-Bill To: ${clientName || "(no client)"}${addressLine ? `\n        ${addressLine}` : ""}
+Bill To: ${clientName || "(no client)"}
 
 ──────────────────
 ${itemLines || "(no items)"}
@@ -525,6 +569,9 @@ ${company.paymentTerms}${watermark}`;
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // ============================================
+  // Loading State
+  // ============================================
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -533,6 +580,9 @@ ${company.paymentTerms}${watermark}`;
     );
   }
 
+  // ============================================
+  // Render
+  // ============================================
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-7xl mx-auto">
@@ -560,7 +610,6 @@ ${company.paymentTerms}${watermark}`;
             </p>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            {/* ⭐ Usage Badge */}
             {!isPro && (
               <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
                 <div className="text-xs text-gray-600">{limitMessage}</div>
@@ -573,9 +622,7 @@ ${company.paymentTerms}${watermark}`;
                       : "text-green-600"
                   }`}
                 >
-                  {remaining === 0
-                    ? "Limit reached"
-                    : `${remaining} left`}
+                  {remaining === 0 ? "Limit reached" : `${remaining} left`}
                 </div>
                 {remaining === 0 && (
                   <button
@@ -592,7 +639,6 @@ ${company.paymentTerms}${watermark}`;
                 ✨ Unlimited invoices
               </div>
             )}
-
             <button
               onClick={() => setShowSettings(true)}
               className="text-sm px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium"
@@ -660,7 +706,6 @@ ${company.paymentTerms}${watermark}`;
               />
             </div>
 
-            {/* ⭐ NEW: Client Address */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Client Address
@@ -674,7 +719,6 @@ ${company.paymentTerms}${watermark}`;
               />
             </div>
 
-            {/* ⭐ NEW: Client City */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Client City
@@ -978,7 +1022,7 @@ ${company.paymentTerms}${watermark}`;
                 </p>
               </div>
 
-              {/* ⭐ WATERMARK for Free users */}
+              {/* Watermark for Free users */}
               {!isPro && (
                 <div className="mt-6 pt-3 border-t border-dashed border-gray-300 text-center">
                   <p className="text-[10px] text-gray-400 font-medium tracking-wide">
@@ -1009,7 +1053,8 @@ ${company.paymentTerms}${watermark}`;
 
           {visibleInvoices.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              තාම invoices save කරලා නෑ. උඩ &quot;💾 Save Invoice&quot; button එක ඔබන්න!
+              තාම invoices save කරලා නෑ. උඩ &quot;💾 Save Invoice&quot; button
+              එක ඔබන්න!
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1084,10 +1129,11 @@ ${company.paymentTerms}${watermark}`;
           company={company}
           onSave={saveCompany}
           onClose={() => setShowSettings(false)}
+          onUpgrade={handleUpgrade}
         />
       )}
 
-      {/* ⭐ Upgrade Modal */}
+      {/* Upgrade Modal */}
       {showUpgradeModal && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
@@ -1105,8 +1151,8 @@ ${company.paymentTerms}${watermark}`;
               You've reached your limit
             </h2>
             <p className="text-gray-600 mb-6">
-              Free plan එකට මාසෙකට invoices {getRemainingInvoices("free", 0)}ක්
-              විතරයි. ඔබ දැන් ඔබේ limit එකට ඇවිත්!
+              Free plan එකට මාසෙකට invoices 5ක් විතරයි. ඔබ දැන් ඔබේ limit
+              එකට ඇවිත්!
             </p>
 
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
@@ -1132,50 +1178,12 @@ ${company.paymentTerms}${watermark}`;
               </ul>
             </div>
 
-<button
-  onClick={async () => {
-    if (!user?.email) {
-      alert("Please sign in first");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_cart: [
-            {
-              product_id: "pdt_0NpmLub4sWRnkMX96ubJB",
-              quantity: 1,
-            },
-          ],
-          customer: {
-            email: user.email,
-          },
-        }),
-      });
-
-      const data = await response.json();
-
-      // Debug — මොකද එන්නේ කියලා බලන්න
-      console.log("Checkout response:", data);
-
-      const checkoutUrl = data.checkout_url || data.url;
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      } else {
-        alert("Failed to create checkout session. Check console for details.");
-      }
-    } catch (err) {
-      console.error("Checkout error:", err);
-      alert("Something went wrong. Please try again.");
-    }
-  }}
-  className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all mb-2"
->
-  Upgrade to Pro — $5/month
-</button>
+            <button
+              onClick={handleUpgrade}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all mb-2"
+            >
+              Upgrade to Pro — $5/month
+            </button>
             <button
               onClick={() => setShowUpgradeModal(false)}
               className="w-full py-2 text-gray-600 hover:text-gray-900 text-sm"
