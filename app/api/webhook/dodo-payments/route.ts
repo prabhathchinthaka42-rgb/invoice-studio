@@ -10,6 +10,53 @@ export const POST = Webhooks({
     // Handle payment success events
     const eventType = payload.type;
     
+    // 🔴 Handle cancellations (downgrade to free)
+    if (
+      eventType === "subscription.cancelled" ||
+      eventType === "subscription.expired"
+    ) {
+      console.log(`🔴 Subscription cancelled/expired, downgrading user`);
+
+      const data = payload.data as Record<string, unknown>;
+      let customerEmail: string | undefined;
+      
+      if (data?.customer && typeof data.customer === "object") {
+        const customer = data.customer as Record<string, unknown>;
+        if (typeof customer.email === "string") {
+          customerEmail = customer.email;
+        }
+      }
+      
+      if (!customerEmail && typeof data?.customer_email === "string") {
+        customerEmail = data.customer_email;
+      }
+
+      if (!customerEmail) {
+        console.error("❌ Could not find customer email in cancel payload");
+        return;
+      }
+
+      console.log(`👤 Downgrading user: ${customerEmail}`);
+
+      const supabase = createServiceClient();
+      const { error } = await supabase
+        .from("companies")
+        .update({
+          plan: "free",
+          pro_since: null,
+        })
+        .eq("email", customerEmail);
+
+      if (error) {
+        console.error("❌ Failed to downgrade user:", error);
+        throw new Error("Failed to downgrade user plan");
+      }
+
+      console.log(`✅ User downgraded to Free: ${customerEmail}`);
+      return; // ⭐ වැදගත්: මේකෙන් පස්සේ අනිත් code එක run වෙන්නේ නෑ
+    }
+
+    // 🟢 Handle successful payments (upgrade to pro)
     if (
       eventType === "payment.succeeded" ||
       eventType === "subscription.active"
