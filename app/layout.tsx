@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.invoice-studio.app"),
   verification: {
-    google: "3pR1XgnFLjQ3ZBRZARRqrgVOKeFHTlVASUQwiftQ_p0",
+    google: "OyLW78tiJWk_7jXLCBGjFD1bden-ISA2SGeg8pAGRtQ",
   },
   title: {
     default: "Invoice Studio — Invoices in Seconds",
