@@ -426,7 +426,7 @@ export default function Home() {
   const newInvoice = () => {
     if (
       !confirm(
-        "නව invoice එකක් පටන් ගන්නද? දැනට save නොකරපු දේවල් නැති වෙයි."
+        "Start a new invoice? Any unsaved changes will be lost."
       )
     )
       return;
@@ -455,7 +455,7 @@ export default function Home() {
   };
 
   const deleteInvoice = async (id: string) => {
-    if (!confirm("මේ invoice එක delete කරන්නද?")) return;
+    if (!confirm("Are you sure you want to delete this invoice?")) return;
 
     const supabase = createClient();
     const { data, error: deleteError } = await supabase
@@ -1053,8 +1053,7 @@ ${company.paymentTerms}${watermark}`;
 
           {visibleInvoices.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              තාම invoices save කරලා නෑ. උඩ &quot;💾 Save Invoice&quot; button
-              එක ඔබන්න!
+              No saved invoices yet. Click the "💾 Save Invoice" button above!
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1151,13 +1150,12 @@ ${company.paymentTerms}${watermark}`;
               You've reached your limit
             </h2>
             <p className="text-gray-600 mb-6">
-              Free plan එකට මාසෙකට invoices 5ක් විතරයි. ඔබ දැන් ඔබේ limit
-              එකට ඇවිත්!
+              The Free plan allows up to 5 invoices per month. You have reached your limit!
             </p>
 
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
               <p className="text-sm font-semibold text-gray-900 mb-3">
-                ⭐ Pro plan එකෙන් ලැබෙන දේ:
+                ⭐ What you get with Pro:
               </p>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-center gap-2">
