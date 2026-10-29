@@ -1122,6 +1122,13 @@ ${company.paymentTerms}${watermark}`;
         </div>
       </div>
 
+      {/* ⭐ ApexAI Branding Footer */}
+      <div className="text-center mt-12 pb-4">
+        <p className="text-xs text-gray-400">
+          Powered by <span className="font-semibold text-gray-500 hover:text-gray-700 transition-colors">ApexAI Company</span>
+        </p>
+      </div>
+
       {/* Company Settings Modal */}
       {showSettings && (
         <CompanySettings
