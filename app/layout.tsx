@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://invoice-studio-murex.vercel.app"),
+  metadataBase: new URL("https://www.invoice-studio.app"),
   verification: {
     google: "3pR1XgnFLjQ3ZBRZARRqrgVOKeFHTlVASUQwiftQ_p0",
   },
