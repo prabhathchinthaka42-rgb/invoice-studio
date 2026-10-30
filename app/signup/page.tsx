@@ -48,9 +48,16 @@ export default function SignupPage() {
       }
 
       if (data.user) {
-        // Success — redirect to app
-        router.push("/app");
-        router.refresh();
+        if (data.session) {
+          // Auto-login (for cases where confirm email is off)
+          router.push("/app");
+          router.refresh();
+        } else {
+          // Email confirmation required
+          setError("");
+          alert("Success! Please check your email inbox to confirm your account before signing in.");
+          router.push("/login");
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
