@@ -33,6 +33,7 @@ type SavedInvoice = {
   status: "pending" | "paid";
   createdAt: number;
   deletedAt: number | null;
+  currency: string; // ⭐ NEW
 };
 
 type DBInvoiceRow = {
@@ -49,6 +50,7 @@ type DBInvoiceRow = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  currency: string; // ⭐ NEW
 };
 
 type DBCompanyRow = {
@@ -87,7 +89,17 @@ const DEFAULT_COMPANY: CompanyInfo = {
   plan: "free",
 };
 
-const DODO_PRODUCT_ID = "pdt_0NqqsbOKEVdi49C2pzwvy"; // ⚠️ Live mode එකේදී වෙනස් කරන්න
+const DODO_PRODUCT_ID = "pdt_0NpmLub4sWRnkMX96ubJB"; // ⚠️ Live mode එකේදී වෙනස් කරන්න
+
+const CURRENCIES = [
+  { code: "USD", label: "USD ($)" },
+  { code: "EUR", label: "EUR (€)" },
+  { code: "GBP", label: "GBP (£)" },
+  { code: "LKR", label: "LKR (Rs)" },
+  { code: "INR", label: "INR (₹)" },
+  { code: "AUD", label: "AUD ($)" },
+  { code: "CAD", label: "CAD ($)" },
+];
 
 // ============================================
 // Helper Functions
@@ -100,6 +112,18 @@ function formatDate(dateStr: string) {
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
   return `${parseInt(day)} ${monthNames[parseInt(month) - 1]} ${year}`;
+}
+
+// ⭐ NEW: Format numbers with currency
+function formatMoney(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency || "USD",
+    }).format(amount);
+  } catch (e) {
+    return `${currency || "USD"} ${amount.toLocaleString()}`;
+  }
 }
 
 function dbToSavedInvoice(row: DBInvoiceRow): SavedInvoice {
@@ -115,6 +139,7 @@ function dbToSavedInvoice(row: DBInvoiceRow): SavedInvoice {
     status: row.status,
     createdAt: new Date(row.created_at).getTime(),
     deletedAt: row.deleted_at ? new Date(row.deleted_at).getTime() : null,
+    currency: row.currency || "USD", // ⭐ NEW
   };
 }
 
@@ -165,6 +190,7 @@ export default function Home() {
   const [invoiceNumber, setInvoiceNumber] = useState("INV-001");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [currency, setCurrency] = useState("USD"); // ⭐ NEW
   const [items, setItems] = useState<LineItem[]>(DEFAULT_ITEMS);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(null);
   const [savedInvoices, setSavedInvoices] = useState<SavedInvoice[]>([]);
@@ -252,6 +278,7 @@ export default function Home() {
     setInvoiceNumber("INV-001");
     setInvoiceDate("");
     setDueDate("");
+    setCurrency("USD"); // Reset currency
     setItems(DEFAULT_ITEMS);
     setCurrentInvoiceId(null);
     setError("");
@@ -374,6 +401,7 @@ export default function Home() {
       invoice_number: invoiceNumber,
       invoice_date: invoiceDate || null,
       due_date: dueDate || null,
+      currency: currency, // ⭐ NEW
       items,
       user_id: user.id,
     };
@@ -437,6 +465,7 @@ export default function Home() {
     setInvoiceNumber("INV-001");
     setInvoiceDate("");
     setDueDate("");
+    setCurrency("USD");
     setItems(DEFAULT_ITEMS);
     setCurrentInvoiceId(null);
     setError("");
@@ -449,6 +478,7 @@ export default function Home() {
     setInvoiceNumber(invoice.invoiceNumber);
     setInvoiceDate(invoice.invoiceDate);
     setDueDate(invoice.dueDate);
+    setCurrency(invoice.currency); // ⭐ NEW
     setItems(invoice.items);
     setCurrentInvoiceId(invoice.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -539,9 +569,9 @@ export default function Home() {
       .filter((item) => item.description.trim() !== "")
       .map(
         (item) =>
-          `${item.description}\n  ${item.quantity} × ${item.rate.toLocaleString()} = ${(
-            item.quantity * item.rate
-          ).toLocaleString()}`
+          `${item.description}\n  ${item.quantity} × ${formatMoney(item.rate, currency)} = ${formatMoney(
+            item.quantity * item.rate, currency
+          )}`
       )
       .join("\n\n");
 
@@ -557,7 +587,7 @@ Bill To: ${clientName || "(no client)"}
 ${itemLines || "(no items)"}
 ──────────────────
 
-TOTAL: ${total.toLocaleString()}
+TOTAL: ${formatMoney(total, currency)}
 
 Issue Date: ${formatDate(invoiceDate)}
 Due Date: ${formatDate(dueDate)}
@@ -732,16 +762,35 @@ ${company.paymentTerms}${watermark}`;
               />
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Invoice Number
-              </label>
-              <input
-                type="text"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Invoice Number
+                </label>
+                <input
+                  type="text"
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                {/* ⭐ NEW: Currency Selector */}
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Currency
+                </label>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -830,7 +879,7 @@ ${company.paymentTerms}${watermark}`;
                   <div className="text-right text-xs text-gray-600">
                     Line total:{" "}
                     <span className="font-semibold text-gray-900">
-                      {(item.quantity * item.rate).toLocaleString()}
+                      {formatMoney(item.quantity * item.rate, currency)}
                     </span>
                   </div>
                 </div>
@@ -841,7 +890,7 @@ ${company.paymentTerms}${watermark}`;
                   Total
                 </span>
                 <span className="text-xl font-bold text-blue-600">
-                  {total.toLocaleString()}
+                  {formatMoney(total, currency)}
                 </span>
               </div>
             </div>
@@ -967,10 +1016,10 @@ ${company.paymentTerms}${watermark}`;
                         {item.quantity}
                       </td>
                       <td className="py-3 text-sm text-right tabular-nums">
-                        {item.rate.toLocaleString()}
+                        {formatMoney(item.rate, currency)}
                       </td>
                       <td className="py-3 text-sm text-right tabular-nums font-medium">
-                        {(item.quantity * item.rate).toLocaleString()}
+                        {formatMoney(item.quantity * item.rate, currency)}
                       </td>
                     </tr>
                   ))}
@@ -985,7 +1034,7 @@ ${company.paymentTerms}${watermark}`;
                       className="tabular-nums"
                       style={{ color: isPro ? company.brandColor : "#2563eb" }}
                     >
-                      {total.toLocaleString()}
+                      {formatMoney(total, currency)}
                     </span>
                   </div>
                 </div>
@@ -1111,7 +1160,7 @@ ${company.paymentTerms}${watermark}`;
                         {inv.status === "paid" ? "✓ Paid" : "● Pending"}
                       </button>
                       <p className="text-lg font-bold text-blue-600">
-                        {invTotal.toLocaleString()}
+                        {formatMoney(invTotal, inv.currency)}
                       </p>
                     </div>
                   </div>
@@ -1122,7 +1171,7 @@ ${company.paymentTerms}${watermark}`;
         </div>
       </div>
 
-      {/* ⭐ ApexAI Branding Footer */}
+      {/* ApexAI Branding Footer */}
       <div className="text-center mt-12 pb-4">
         <p className="text-xs text-gray-400">
           Powered by <span className="font-semibold text-gray-500 hover:text-gray-700 transition-colors">ApexAI Company</span>
