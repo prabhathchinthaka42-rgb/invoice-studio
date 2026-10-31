@@ -8,7 +8,14 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// ⭐ Generate static metadata for SEO
+// ⭐ අලුතෙන් එකතු කළේ මේකයි
+export async function generateStaticParams() {
+  return BLOG_POSTS.map((post) => ({
+    slug: post.slug,
+  }));
+}
+
+// Generate static metadata for SEO
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const post = BLOG_POSTS.find((p) => p.slug === slug);
