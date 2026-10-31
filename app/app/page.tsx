@@ -89,7 +89,7 @@ const DEFAULT_COMPANY: CompanyInfo = {
   plan: "free",
 };
 
-const DODO_PRODUCT_ID = "pdt_0NpmLub4sWRnkMX96ubJB"; // ⚠️ Live mode එකේදී වෙනස් කරන්න
+const DODO_PRODUCT_ID = "pdt_0NqqsbOKEVdi49C2pzwvy"; // ⚠️ Live mode එකේදී වෙනස් කරන්න
 
 const CURRENCIES = [
   { code: "USD", label: "USD ($)" },
