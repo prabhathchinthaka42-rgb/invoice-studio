@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false); // ⭐ NEW: Success UI එක පෙන්නන්න
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,10 +54,8 @@ export default function SignupPage() {
           router.push("/app");
           router.refresh();
         } else {
-          // Email confirmation required
-          setError("");
-          alert("Success! Please check your email inbox to confirm your account before signing in.");
-          router.push("/login");
+          // Email confirmation required — Show custom success UI
+          setShowSuccess(true); 
         }
       }
     } catch (err) {
@@ -98,14 +97,36 @@ export default function SignupPage() {
 
           {/* Card */}
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2">Create your account</h1>
-              <p className="text-sm text-slate-400">
-                Free to start. No credit card required.
-              </p>
-            </div>
+            {showSuccess ? (
+              // ⭐ Success UI
+              <div className="text-center py-6">
+                <div className="w-20 h-20 bg-green-500/10 border border-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-4xl text-green-400">✓</span>
+                </div>
+                <h1 className="text-2xl font-bold mb-2">Check your inbox</h1>
+                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                  We've sent a confirmation link to <br />
+                  <strong className="text-white">{email}</strong>.<br /><br />
+                  Please click the link to verify your account and sign in.
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-block w-full py-3 bg-white text-slate-900 font-semibold rounded-lg hover:bg-blue-50 transition-all"
+                >
+                  Go to Login
+                </Link>
+              </div>
+            ) : (
+              // ⭐ Original Form UI
+              <>
+                <div className="text-center mb-6">
+                  <h1 className="text-2xl font-bold mb-2">Create your account</h1>
+                  <p className="text-sm text-slate-400">
+                    Free to start. No credit card required.
+                  </p>
+                </div>
 
-            <form onSubmit={handleSignup} className="space-y-4">
+                <form onSubmit={handleSignup} className="space-y-4">
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -167,6 +188,8 @@ export default function SignupPage() {
                 {loading ? "Creating account..." : "Create account"}
               </button>
             </form>
+          </>
+        )}
 
             {/* Login link */}
             <p className="text-center text-sm text-slate-400 mt-6">
