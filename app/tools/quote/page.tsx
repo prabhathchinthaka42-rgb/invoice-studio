@@ -1,12 +1,25 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import type { User } from "@supabase/supabase-js";
+
+// ⭐ මේක අලුතෙන් දැම්මා Company Details ටයිප් එක
+type CompanyInfo = {
+  name: string;
+  address: string;
+  email: string;
+  phone: string;
+  logo: string;
+};
 
 export default function QuoteGeneratorPage() {
   const quoteRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [company, setCompany] = useState<CompanyInfo | null>(null); // ⭐ Company State එක
   
   const [clientName, setClientName] = useState("");
   const [quoteNumber, setQuoteNumber] = useState("QTE-001");
@@ -14,6 +27,28 @@ export default function QuoteGeneratorPage() {
   const [validUntil, setValidUntil] = useState("");
   const [items, setItems] = useState([{ id: "1", description: "", quantity: 1, rate: 0 }]);
   const [copied, setCopied] = useState(false);
+
+  // ⭐ මේකෙන් තමයි Company විස්තර Supabase එකෙන් ගන්නේ
+  useEffect(() => {
+    const loadCompany = async () => {
+      const supabase = createClient();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        setUser(currentUser);
+        const { data: compData } = await supabase
+          .from("companies")
+          .select("name, address, email, phone, logo")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+
+        if (compData) {
+          setCompany(compData);
+        }
+      }
+    };
+    loadCompany();
+  }, []);
 
   const addItem = () => {
     setItems([...items, { id: crypto.randomUUID(), description: "", quantity: 1, rate: 0 }]);
@@ -32,42 +67,19 @@ export default function QuoteGeneratorPage() {
 
   const total = items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
 
-  // Download PDF Function
   const downloadPDF = async () => {
     if (!quoteRef.current) return;
     const html2pdf = (await import("html2pdf.js")).default;
-    
     const opt = {
       margin: 0,
       filename: `${quoteNumber || "quote"}.pdf`,
       image: { type: "jpeg" as const, quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        onclone: (clonedDoc: Document) => {
-          // Inject a style tag to force standard colors and remove lab/oklch
-          const style = clonedDoc.createElement("style");
-          style.innerHTML = `
-            * {
-              color-scheme: light !important;
-            }
-            .pdf-quote, .pdf-quote * {
-              --tw-bg-opacity: 1;
-              --tw-text-opacity: 1;
-              --tw-border-opacity: 1;
-              --tw-shadow-color: #000 !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        }
-      },
+      html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
-    
     html2pdf().set(opt).from(quoteRef.current).save();
   };
 
-  // Copy Text Function
   const copyText = async () => {
     const itemLines = items
       .filter((item) => item.description.trim() !== "")
@@ -80,6 +92,8 @@ export default function QuoteGeneratorPage() {
       .join("\n\n");
 
     const text = `📝 QUOTE #${quoteNumber || "QTE-001"}
+
+From: ${company?.name || "Your Company"}
 
 Prepared For: ${clientName || "(no client)"}
 
@@ -114,7 +128,6 @@ Thank you!`;
           <h1 className="text-3xl font-bold mb-8">📝 Quote Generator</h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form Section */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
               <h2 className="text-xl font-semibold mb-4 text-slate-200">Quote Details</h2>
               
@@ -131,18 +144,15 @@ Thank you!`;
                   </div>
                   <div>
                     <label className="block text-sm text-slate-400 mb-1">Quote Date</label>
-                    {/* // ⭐ මෙතන [color-scheme:dark] දැම්මා */}
                     <input type="date" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm text-slate-400 mb-1">Valid Until</label>
-                  {/* // ⭐ මෙතනත් [color-scheme:dark] දැම්මා */}
                   <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" />
                 </div>
 
-                {/* Line Items */}
                 <div className="pt-4 border-t border-slate-800">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium text-slate-200">Line Items</h3>
@@ -165,38 +175,27 @@ Thank you!`;
               </div>
             </div>
 
-            {/* Preview Section */}
             <div>
-              {/* Action Buttons */}
               <div className="mb-3 flex justify-end gap-2">
-                <button
-                  onClick={copyText}
-                  className={`px-4 py-2 font-medium rounded-lg transition-colors ${
-                    copied
-                      ? "bg-green-100 text-green-800 border border-green-300"
-                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
+                <button onClick={copyText} className={`px-4 py-2 font-medium rounded-lg transition-colors ${copied ? "bg-green-100 text-green-800 border border-green-300" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"}`}>
                   {copied ? "✓ Copied!" : "📋 Copy Quote"}
                 </button>
-                <button
-                  onClick={downloadPDF}
-                  className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
-                >
+                <button onClick={downloadPDF} className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
                   ⬇ Download PDF
                 </button>
               </div>
 
-              {/* White Paper Preview */}
-              {/* // ⭐ මෙතනටයි pdf-quote කියන class එක දැම්මේ */}
-              <div
-                ref={quoteRef}
-                className="pdf-quote bg-white rounded-xl p-8 text-slate-900 shadow-2xl"
-              >
+              <div ref={quoteRef} className="pdf-quote bg-white rounded-xl p-8 text-slate-900 shadow-2xl">
                 <div className="flex justify-between items-start mb-10">
                   <div>
-                    <h2 className="text-2xl font-bold">Your Company</h2>
-                    <p className="text-sm text-slate-500 mt-1">123 Business Street, Colombo</p>
+                    {/* ⭐ මෙතන තමයි Company විස්තර දාන්නේ */}
+                    {company?.logo && (
+                      <img src={company.logo} alt="Logo" className="h-12 max-w-[150px] object-contain mb-3" />
+                    )}
+                    <h2 className="text-2xl font-bold">{company?.name || "Your Company"}</h2>
+                    <p className="text-sm text-slate-500 mt-1 whitespace-pre-line">{company?.address || "123 Business Street, Colombo"}</p>
+                    {company?.email && <p className="text-sm text-slate-500 mt-1">{company.email}</p>}
+                    {company?.phone && <p className="text-sm text-slate-500">{company.phone}</p>}
                   </div>
                   <div className="text-right">
                     <h1 className="text-4xl font-bold text-blue-600 tracking-tight">QUOTE</h1>

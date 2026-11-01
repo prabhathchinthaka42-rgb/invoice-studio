@@ -1,19 +1,52 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import type { User } from "@supabase/supabase-js";
+
+type CompanyInfo = {
+  name: string;
+  address: string;
+  email: string;
+  phone: string;
+  logo: string;
+};
 
 export default function ReceiptGeneratorPage() {
   const receiptRef = useRef<HTMLDivElement>(null);
-  
+  const [user, setUser] = useState<User | null>(null);
+  const [company, setCompany] = useState<CompanyInfo | null>(null);
+
   const [clientName, setClientName] = useState("");
   const [receiptNumber, setReceiptNumber] = useState("RCPT-001");
   const [receiptDate, setReceiptDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [items, setItems] = useState([{ id: "1", description: "", quantity: 1, rate: 0 }]);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const loadCompany = async () => {
+      const supabase = createClient();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        setUser(currentUser);
+        const { data: compData } = await supabase
+          .from("companies")
+          .select("name, address, email, phone, logo")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+
+        if (compData) {
+          setCompany(compData);
+        }
+      }
+    };
+    loadCompany();
+  }, []);
 
   const addItem = () => {
     setItems([...items, { id: crypto.randomUUID(), description: "", quantity: 1, rate: 0 }]);
@@ -32,7 +65,6 @@ export default function ReceiptGeneratorPage() {
 
   const total = items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
 
-  // Download PDF Function
   const downloadPDF = async () => {
     if (!receiptRef.current) return;
     const html2pdf = (await import("html2pdf.js")).default;
@@ -45,7 +77,6 @@ export default function ReceiptGeneratorPage() {
         scale: 2,
         useCORS: true,
         onclone: (clonedDoc: Document) => {
-          // ⭐ මේ කොටසින් අපි අලුත් පාට ඔක්කොම සාමාන්‍ය Hex පාට වලට මාරු කරනවා
           const style = clonedDoc.createElement("style");
           style.innerHTML = `
             :root, * {
@@ -71,7 +102,6 @@ export default function ReceiptGeneratorPage() {
     html2pdf().set(opt).from(receiptRef.current).save();
   };
 
-  // Copy Text Function
   const copyText = async () => {
     const itemLines = items
       .filter((item) => item.description.trim() !== "")
@@ -84,6 +114,8 @@ export default function ReceiptGeneratorPage() {
       .join("\n\n");
 
     const text = `🧾 RECEIPT #${receiptNumber || "RCPT-001"}
+
+From: ${company?.name || "Your Company"}
 
 Received From: ${clientName || "(no client)"}
 
@@ -118,7 +150,6 @@ Thank you!`;
           <h1 className="text-3xl font-bold mb-8">🧾 Receipt Maker</h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form Section */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
               <h2 className="text-xl font-semibold mb-4 text-slate-200">Receipt Details</h2>
               
@@ -150,7 +181,6 @@ Thank you!`;
                   </select>
                 </div>
 
-                {/* Line Items */}
                 <div className="pt-4 border-t border-slate-800">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium text-slate-200">Items Paid</h3>
@@ -173,7 +203,6 @@ Thank you!`;
               </div>
             </div>
 
-            {/* Preview Section */}
             <div>
               <div className="mb-3 flex justify-end gap-2">
                 <button onClick={copyText} className={`px-4 py-2 font-medium rounded-lg transition-colors ${copied ? "bg-green-100 text-green-800 border border-green-300" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"}`}>
@@ -187,8 +216,14 @@ Thank you!`;
               <div ref={receiptRef} className="pdf-receipt bg-white rounded-xl p-8 text-slate-900 shadow-2xl">
                 <div className="flex justify-between items-start mb-10">
                   <div>
-                    <h2 className="text-2xl font-bold">Your Company</h2>
-                    <p className="text-sm text-slate-500 mt-1">123 Business Street, Colombo</p>
+                    {/* ⭐ මෙතන තමයි Company විස්තර දාන්නේ */}
+                    {company?.logo && (
+                      <img src={company.logo} alt="Logo" className="h-12 max-w-[150px] object-contain mb-3" />
+                    )}
+                    <h2 className="text-2xl font-bold">{company?.name || "Your Company"}</h2>
+                    <p className="text-sm text-slate-500 mt-1 whitespace-pre-line">{company?.address || "123 Business Street, Colombo"}</p>
+                    {company?.email && <p className="text-sm text-slate-500 mt-1">{company.email}</p>}
+                    {company?.phone && <p className="text-sm text-slate-500">{company.phone}</p>}
                   </div>
                   <div className="text-right">
                     <h1 className="text-4xl font-bold text-emerald-600 tracking-tight">RECEIPT</h1>
