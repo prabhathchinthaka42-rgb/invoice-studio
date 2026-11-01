@@ -73,12 +73,18 @@ export default function Navbar() {
           <div className="w-24 h-9 bg-white/5 rounded-lg animate-pulse" />
         ) : user ? (
           <>
-            <Link
-              href="/app"
-              className="px-4 py-2 text-sm font-medium bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-all"
-            >
-              Open App →
-            </Link>
+           <Link
+            href="/tools"
+            className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+          >
+            Tools
+          </Link>
+          <Link
+            href="/app"
+            className="px-4 py-2 text-sm font-medium bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-all"
+          >
+            Open App →
+          </Link>
             <button
               onClick={handleLogout}
               className="px-3 py-2 text-sm text-slate-400 hover:text-white transition-colors"

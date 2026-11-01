@@ -12,7 +12,7 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "how-to-create-professional-invoices-fast",
     title: "How to Create Professional Invoices in Seconds (Free Tool)",
-    description: "Stop wasting time on manual invoicing. Learn how to generate professional, watermarked-free PDF invoices instantly with our privacy-first tool.",
+    description: "Learn how to create PDF invoices in seconds. Start free with 5 invoices per month, or upgrade to Pro for unlimited, watermark-free invoices.",
     date: "October 31, 2026",
     content: (
       <div className="space-y-6 text-slate-300">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CompanySettings, { type CompanyInfo } from "@/components/CompanySettings";
 import {
@@ -669,6 +670,12 @@ ${company.paymentTerms}${watermark}`;
                 ✨ Unlimited invoices
               </div>
             )}
+            <Link
+              href="/tools"
+              className="text-sm px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium"
+            >
+              🛠️ Tools
+            </Link>
             <button
               onClick={() => setShowSettings(true)}
               className="text-sm px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium"

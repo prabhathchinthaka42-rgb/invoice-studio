@@ -4,8 +4,11 @@ import Footer from "@/components/Footer";
 import { BLOG_POSTS } from "@/lib/blog-data";
 
 export const metadata = {
-  title: "Blog — Invoice Studio",
+  title: "Blog",
   description: "Tips, guides, and insights on freelancing, small business management, and invoicing.",
+  alternates: {
+    canonical: "/blog",
+  },
 };
 
 export default function BlogPage() {

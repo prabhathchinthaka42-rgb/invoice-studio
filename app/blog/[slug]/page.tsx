@@ -23,8 +23,11 @@ export async function generateMetadata({ params }: Props) {
   if (!post) return { title: "Post Not Found" };
 
   return {
-    title: `${post.title} — Invoice Studio`,
+    title: post.title,
     description: post.description,
+    alternates: {
+      canonical: `/blog/${slug}`,
+    },
   };
 }
 

@@ -48,11 +48,11 @@ export default function HomePage() {
           {/* Main Heading */}
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-[1.1]">
             <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
-              Invoices in seconds,
+              Free Invoice Generator
             </span>
             <br />
             <span className="bg-gradient-to-r from-blue-300 via-purple-300 to-pink-200 bg-clip-text text-transparent">
-              not minutes.
+              for Freelancers & Small Businesses
             </span>
           </h1>
 
@@ -82,7 +82,7 @@ export default function HomePage() {
               href="/about"
               className="px-8 py-4 bg-white/5 backdrop-blur-sm text-white border border-white/20 font-semibold rounded-lg hover:bg-white/10 transition-colors"
             >
-              Learn More
+              Learn About Invoice Studio
             </Link>
           </div>
 
