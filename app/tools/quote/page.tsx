@@ -36,13 +36,34 @@ export default function QuoteGeneratorPage() {
   const downloadPDF = async () => {
     if (!quoteRef.current) return;
     const html2pdf = (await import("html2pdf.js")).default;
+    
     const opt = {
       margin: 0,
       filename: `${quoteNumber || "quote"}.pdf`,
       image: { type: "jpeg" as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        onclone: (clonedDoc: Document) => {
+          // Inject a style tag to force standard colors and remove lab/oklch
+          const style = clonedDoc.createElement("style");
+          style.innerHTML = `
+            * {
+              color-scheme: light !important;
+            }
+            .pdf-quote, .pdf-quote * {
+              --tw-bg-opacity: 1;
+              --tw-text-opacity: 1;
+              --tw-border-opacity: 1;
+              --tw-shadow-color: #000 !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
+      },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
+    
     html2pdf().set(opt).from(quoteRef.current).save();
   };
 
@@ -110,13 +131,15 @@ Thank you!`;
                   </div>
                   <div>
                     <label className="block text-sm text-slate-400 mb-1">Quote Date</label>
-                    <input type="date" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+                    {/* // ⭐ මෙතන [color-scheme:dark] දැම්මා */}
+                    <input type="date" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm text-slate-400 mb-1">Valid Until</label>
-                  <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  {/* // ⭐ මෙතනත් [color-scheme:dark] දැම්මා */}
+                  <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" />
                 </div>
 
                 {/* Line Items */}
@@ -165,9 +188,10 @@ Thank you!`;
               </div>
 
               {/* White Paper Preview */}
+              {/* // ⭐ මෙතනටයි pdf-quote කියන class එක දැම්මේ */}
               <div
                 ref={quoteRef}
-                className="bg-white rounded-xl p-8 text-slate-900 shadow-2xl"
+                className="pdf-quote bg-white rounded-xl p-8 text-slate-900 shadow-2xl"
               >
                 <div className="flex justify-between items-start mb-10">
                   <div>

@@ -106,18 +106,18 @@ export default function ToolsPage() {
               </Link>
 
               {/* Tool 2: Receipt Maker */}
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-colors cursor-not-allowed group">
+              <Link href="/tools/receipt" className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-colors group">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <span className="text-2xl">🧾</span>
                 </div>
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-xl font-semibold">Receipt Maker</h3>
-                  <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">Coming Soon</span>
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Available</span>
                 </div>
                 <p className="text-sm text-slate-400">
                   Generate payment receipts for your customers with just a few clicks.
                 </p>
-              </div>
+              </Link>
             </div>
           )}
         </div>
