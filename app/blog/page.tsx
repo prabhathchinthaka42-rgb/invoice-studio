@@ -22,7 +22,7 @@ export default function BlogPage() {
           <p className="text-lg text-slate-400">Insights for freelancers and small businesses.</p>
         </div>
 
-        <div className="space-y-8">
+        <main className="space-y-8">
           {BLOG_POSTS.map((post) => (
             <Link
               key={post.slug}
@@ -33,11 +33,11 @@ export default function BlogPage() {
               <h2 className="text-2xl font-bold mb-3 group-hover:text-blue-300 transition-colors">
                 {post.title}
               </h2>
-              <p className="text-slate-400 leading-relaxed mb-6">{post.description}</p>
+              <p className="text-slate-300 leading-relaxed mb-6">{post.description}</p>
               <span className="text-sm font-semibold text-white">Read more →</span>
             </Link>
           ))}
-        </div>
+        </main>
       </div>
 
       <Footer />

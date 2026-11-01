@@ -43,7 +43,7 @@ export default async function BlogPostPage({ params }: Props) {
     <div className="min-h-screen bg-slate-950 text-white relative">
       <Navbar />
 
-      <article className="max-w-3xl mx-auto px-6 pt-20 pb-32">
+      <main className="max-w-3xl mx-auto px-6 pt-20 pb-32">
         <Link
           href="/blog"
           className="text-sm text-blue-400 hover:text-blue-300 mb-8 inline-block"
@@ -60,7 +60,7 @@ export default async function BlogPostPage({ params }: Props) {
         <div className="prose prose-invert prose-lg max-w-none">
           {post.content}
         </div>
-      </article>
+      </main>
 
       <Footer />
     </div>

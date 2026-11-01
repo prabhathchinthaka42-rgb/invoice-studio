@@ -98,7 +98,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
         <div className="bg-blue-600/10 border border-blue-500/30 p-6 rounded-xl my-8">
           <h3 className="text-xl font-bold text-white mb-3">Create your invoice in seconds</h3>
-          <p className="mb-4">Stop wasting time formatting Word documents. Use Invoice Studio to generate a professional, watermark-free PDF instantly.</p>
+          <p className="mb-4">Stop wasting time formatting Word documents. Create up to 5 PDF invoices per month for free, or upgrade to Pro for unlimited, watermark-free invoices.</p>
           <Link href="/app" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
             Try Invoice Studio for Free
           </Link>
