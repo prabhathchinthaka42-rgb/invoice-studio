@@ -56,4 +56,65 @@ export const BLOG_POSTS: BlogPost[] = [
       </div>
     ),
   },
+    {
+    slug: "how-to-write-invoice-for-services",
+    title: "How to Write an Invoice for Services (With Free Template)",
+    description: "Learn exactly what to include in a service invoice and how to get paid faster. Includes a free template you can use instantly.",
+    date: "November 1, 2026",
+    content: (
+      <div className="space-y-6 text-slate-300">
+        <p className="text-lg">
+          If you're a freelancer, consultant, or service provider, your invoice isn't just a request for money — it's a legal document and a reflection of your professionalism. But what exactly should you include in an invoice for services? 
+        </p>
+        <p>
+          In this guide, we'll break down the essential components of a service invoice and show you how to create one in seconds using our free tool.
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">The 8 Essential Elements of a Service Invoice</h2>
+        <p>
+          To ensure you get paid on time and avoid awkward conversations with clients, your invoice must include the following:
+        </p>
+        <ul className="list-disc pl-6 space-y-2">
+          <li><strong>Your Business Details:</strong> Name, address, email, and phone number.</li>
+          <li><strong>Client's Details:</strong> The exact name of the person or company paying you.</li>
+          <li><strong>Invoice Number:</strong> A unique identifier (e.g., INV-001) for your records and theirs.</li>
+          <li><strong>Invoice Date:</strong> The date the invoice is issued.</li>
+          <li><strong>Due Date:</strong> When you expect to be paid (e.g., Net 14 or Net 30).</li>
+          <li><strong>Line Items:</strong> Clear descriptions of the services rendered, quantity, and rate.</li>
+          <li><strong>Total Amount:</strong> The final amount due, including any taxes or discounts.</li>
+          <li><strong>Payment Instructions:</strong> Bank details, PayPal link, or how they should pay.</li>
+        </ul>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">Best Practices for Writing Service Invoices</h2>
+        <p>
+          <strong>1. Be specific with descriptions:</strong> Instead of "Consulting," write "Marketing strategy consulting - 3 hours."
+        </p>
+        <p>
+          <strong>2. Send it immediately:</strong> Don't wait until the end of the month. Send the invoice as soon as the service is complete.
+        </p>
+        <p>
+          <strong>3. Keep it professional:</strong> Use a clean, modern design. A messy invoice can make you look unprofessional and delay payment.
+        </p>
+
+        <div className="bg-blue-600/10 border border-blue-500/30 p-6 rounded-xl my-8">
+          <h3 className="text-xl font-bold text-white mb-3">Create your invoice in seconds</h3>
+          <p className="mb-4">Stop wasting time formatting Word documents. Use Invoice Studio to generate a professional, watermark-free PDF instantly.</p>
+          <Link href="/app" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+            Try Invoice Studio for Free
+          </Link>
+        </div>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">Common Invoicing Mistakes to Avoid</h2>
+        <ul className="list-disc pl-6 space-y-2">
+          <li><strong>Skipping the invoice number:</strong> This makes it impossible to track your income accurately.</li>
+          <li><strong>Vague terms:</strong> If your payment terms are unclear, clients will pay whenever they feel like it.</li>
+          <li><strong>Not following up:</strong> If the due date passes, send a polite reminder immediately.</li>
+        </ul>
+
+        <p className="mt-8 font-medium">
+          Ready to send your first professional service invoice? Our free tool sets up your company details once and lets you generate invoices in seconds.
+        </p>
+      </div>
+    ),
+  },
 ];

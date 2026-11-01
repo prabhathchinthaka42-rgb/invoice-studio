@@ -46,5 +46,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    {
+      url: `${baseUrl}/blog/how-to-write-invoice-for-services`,
+      lastModified: "2026-11-01",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
   ];
 }
