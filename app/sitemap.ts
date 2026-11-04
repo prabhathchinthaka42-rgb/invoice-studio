@@ -46,5 +46,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    {
+      url: `${baseUrl}/blog/freelance-invoice-example-what-to-include`,
+      lastModified: "2026-11-04",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
   ];
 }
