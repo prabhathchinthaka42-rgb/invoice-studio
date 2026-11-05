@@ -11,6 +11,7 @@ import {
   getRemainingInvoices,
 } from "@/lib/plan-limits";
 import type { User } from "@supabase/supabase-js";
+import { saveClient, getClients } from "@/lib/actions/clients";
 
 // ============================================
 // Types
@@ -52,6 +53,14 @@ type DBInvoiceRow = {
   updated_at: string;
   deleted_at: string | null;
   currency: string; // ⭐ NEW
+};
+
+type SavedClient = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
 };
 
 type DBCompanyRow = {
@@ -195,6 +204,8 @@ export default function Home() {
   const [items, setItems] = useState<LineItem[]>(DEFAULT_ITEMS);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(null);
   const [savedInvoices, setSavedInvoices] = useState<SavedInvoice[]>([]);
+  const [clients, setClients] = useState<SavedClient[]>([]);
+  const [savingClient, setSavingClient] = useState(false);
 
   const [copied, setCopied] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -266,7 +277,14 @@ export default function Home() {
           }
         }
       }
-      setIsLoaded(true);
+      // Load Saved Clients
+            if (currentUser) {
+              const { success, clients: fetchedClients } = await getClients();
+              if (success && fetchedClients) {
+                setClients(fetchedClients);
+              }
+            }
+            setIsLoaded(true);
     };
     load();
   }, []);
@@ -359,6 +377,31 @@ export default function Home() {
   // ============================================
   // Save Company
   // ============================================
+  const handleSaveCurrentClient = async () => {
+    if (!clientName.trim()) {
+      alert("Please enter a Client Name first.");
+      return;
+    }
+    setSavingClient(true);
+    
+    const fullAddress = `${clientAddress}${clientCity ? `\n${clientCity}` : ""}`;
+    
+    const res = await saveClient({
+      name: clientName,
+      email: "",
+      phone: "",
+      address: fullAddress
+    });
+
+    if (res.error) {
+      alert(res.error);
+    } else {
+      const { success, clients: updatedClients } = await getClients();
+      if (success && updatedClients) setClients(updatedClients);
+    }
+    setSavingClient(false);
+  };
+
   const saveCompany = async (newCompany: CompanyInfo) => {
     if (!user) return;
     setCompany(newCompany);
@@ -615,13 +658,18 @@ ${company.paymentTerms}${watermark}`;
   // Render
   // ============================================
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-900 p-8 relative overflow-hidden">
+      {/* Background: Glowing Orbs for Dashboard */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600 rounded-full blur-[140px] opacity-10 animate-pulse pointer-events-none" />
+      <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-blue-600 rounded-full blur-[120px] opacity-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-1/2 w-[500px] h-[500px] bg-indigo-600 rounded-full blur-[130px] opacity-10 pointer-events-none" />
+
+      <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex justify-between items-start flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-white">
                 🧾 Invoice Studio
               </h1>
               {isPro ? (
@@ -634,7 +682,7 @@ ${company.paymentTerms}${watermark}`;
                 </span>
               )}
             </div>
-            <p className="text-gray-600 text-sm mt-1">
+            <p className="text-slate-400 text-sm mt-1">
               {user?.email
                 ? `Signed in as ${user.email}`
                 : "Create invoices in seconds"}
@@ -642,8 +690,8 @@ ${company.paymentTerms}${watermark}`;
           </div>
           <div className="flex gap-2 items-center flex-wrap">
             {!isPro && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
-                <div className="text-xs text-gray-600">{limitMessage}</div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl shadow-sm">
+                <div className="text-xs text-slate-300">{limitMessage}</div>
                 <div
                   className={`text-xs font-bold ${
                     remaining === 0
@@ -672,19 +720,19 @@ ${company.paymentTerms}${watermark}`;
             )}
             <Link
               href="/tools"
-              className="text-sm px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium"
+              className="text-sm px-4 py-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-xl font-medium transition-all backdrop-blur-md shadow-sm"
             >
               🛠️ Tools
             </Link>
             <button
               onClick={() => setShowSettings(true)}
-              className="text-sm px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium"
+              className="text-sm px-4 py-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-xl font-medium transition-all backdrop-blur-md shadow-sm"
             >
               ⚙️ Settings
             </button>
             <button
               onClick={newInvoice}
-              className="text-sm px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium"
+              className="text-sm px-4 py-2 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-xl font-medium transition-all backdrop-blur-md shadow-sm"
             >
               ✨ New
             </button>
@@ -693,10 +741,10 @@ ${company.paymentTerms}${watermark}`;
               disabled={saving || (!currentInvoiceId && !canSave)}
               className={`text-sm px-4 py-2 font-medium rounded-lg transition-colors disabled:cursor-not-allowed ${
                 justSaved
-                  ? "bg-green-100 text-green-800 border border-green-300"
+                  ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-lg shadow-green-500/20"
                   : !currentInvoiceId && !canSave
-                  ? "bg-gray-200 text-gray-500"
-                  : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  ? "bg-slate-800 text-slate-500 border border-slate-700"
+                  : "bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/30 hover:scale-[1.02]"
               }`}
             >
               {saving
@@ -729,6 +777,29 @@ ${company.paymentTerms}${watermark}`;
             <h2 className="text-xl font-semibold mb-4 text-gray-900">
               Invoice Details
             </h2>
+            {/* Saved Clients Dropdown */}
+            <div className="mb-5 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Load Saved Client (Optional)
+              </label>
+              <select
+                onChange={(e) => {
+                  const client = clients.find(c => c.id === e.target.value);
+                  if (client) {
+                    setClientName(client.name);
+                    setClientAddress(client.address);
+                    setClientCity("");
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                defaultValue=""
+              >
+                <option value="" disabled>-- Choose a client --</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -767,8 +838,16 @@ ${company.paymentTerms}${watermark}`;
                 placeholder="e.g. Colombo"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <div className="mt-2 flex justify-end">
+                <button
+                  onClick={handleSaveCurrentClient}
+                  disabled={savingClient || !clientName}
+                  className="text-xs px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-200 font-medium transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {savingClient ? "Saving..." : "💾 Save this Client"}
+                </button>
+              </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -910,15 +989,15 @@ ${company.paymentTerms}${watermark}`;
                 onClick={copyInvoiceText}
                 className={`px-4 py-2 font-medium rounded-lg transition-colors ${
                   copied
-                    ? "bg-green-100 text-green-800 border border-green-300"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-lg shadow-green-500/20"
+                    : "bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 backdrop-blur-md shadow-sm"
                 }`}
               >
                 {copied ? "✓ Copied!" : "📋 Copy Invoice"}
               </button>
               <button
                 onClick={downloadPDF}
-                className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                className="px-5 py-2 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-500/30 hover:scale-[1.02]"
               >
                 ⬇ Download PDF
               </button>
@@ -1097,7 +1176,7 @@ ${company.paymentTerms}${watermark}`;
         {/* Invoice History */}
         <div className="mt-12">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-white">
               📁 Saved Invoices
               {visibleInvoices.length > 0 && (
                 <span className="ml-2 text-base font-normal text-gray-500">
@@ -1180,8 +1259,8 @@ ${company.paymentTerms}${watermark}`;
 
       {/* ApexAI Branding Footer */}
       <div className="text-center mt-12 pb-4">
-        <p className="text-xs text-gray-400">
-          Powered by <span className="font-semibold text-gray-500 hover:text-gray-700 transition-colors">ApexAI Company</span>
+        <p className="text-xs text-slate-500">
+          Powered by <span className="font-semibold text-slate-400 hover:text-slate-300 transition-colors">ApexAI Company</span>
         </p>
       </div>
 
