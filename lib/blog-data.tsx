@@ -9,6 +9,55 @@ export type BlogPost = {
 };
 
 export const BLOG_POSTS: BlogPost[] = [
+    {
+    slug: "how-to-invoice-for-services",
+    title: "How to Invoice for Services: The Ultimate Guide",
+    description: "Learn how to properly invoice for your services as a freelancer or agency. Discover what to include and how to get paid faster.",
+    date: "November 5, 2026",
+    content: (
+      <div className="space-y-6 text-slate-300">
+        <p className="text-lg">
+          If you provide a service — whether you're a web developer, a consultant, a graphic designer, or a cleaner — you need a professional way to request payment. But how do you invoice for services correctly without missing important details?
+        </p>
+        <p>
+          In this guide, we’ll walk you through the exact steps to create a service invoice that gets you paid on time, every time.
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">What Makes a Service Invoice Different?</h2>
+        <p>
+          When you sell a physical product, you list the item and the price. But when you invoice for services, you are charging for your <strong>time, expertise, and results</strong>. Because services are intangible, your invoice needs to be extra clear so the client understands exactly what they are paying for.
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">How to Write an Invoice for Services</h2>
+        <p>Here is the step-by-step process to ensure your service invoice is professional and effective:</p>
+        <ul className="list-disc pl-6 space-y-3">
+          <li><strong>1. Use a Clear Title:</strong> Make sure the word "INVOICE" is large and visible at the top.</li>
+          <li><strong>2. Add Your Details:</strong> Your business name, address, email, and phone number.</li>
+          <li><strong>3. Add Client Details:</strong> The exact legal name and address of your client (not just the contact person).</li>
+          <li><strong>4. Create a Unique Invoice Number:</strong> (e.g., INV-2026-001). This is crucial for your accounting.</li>
+          <li><strong>5. List the Services Clearly:</strong> Don't just write "Consulting - $500". Write "Marketing Strategy Consulting (5 hours @ $100/hr)".</li>
+          <li><strong>6. State Your Payment Terms:</strong> Specify when you expect to be paid (e.g., "Payment due within 14 days").</li>
+          <li><strong>7. Include Payment Instructions:</strong> Provide your bank details or payment links so they have no excuse to delay.</li>
+        </ul>
+
+        <div className="bg-blue-600/10 border border-blue-500/30 p-6 rounded-xl my-8">
+          <h3 className="text-xl font-bold text-white mb-3">Stop Re-typing Your Details</h3>
+          <p className="mb-4">Tired of typing your company info, bank details, and client info every time? Invoice Studio saves your details once, so you can generate a professional PDF invoice in seconds.</p>
+          <Link href="/app" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+            Create Your Free Invoice Now
+          </Link>
+        </div>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">The Biggest Mistake When Invoicing for Services</h2>
+        <p>
+          The most common mistake freelancers make is <strong>delaying the invoice</strong>. You finish the work on Friday, but you don't send the invoice until the end of the month. This tells the client that payment isn't a priority.
+        </p>
+        <p>
+          Send your invoice the moment the service is delivered. With a tool like Invoice Studio, you don't need to spend 30 minutes formatting a Word document. You just select your saved client, add the service, and download the PDF instantly.
+        </p>
+      </div>
+    ),
+  },
   {
     slug: "how-to-create-professional-invoices-fast",
     title: "How to Create Professional Invoices in Seconds (Free Tool)",

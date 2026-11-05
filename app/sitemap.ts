@@ -30,7 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: "2026-10-01",
+      lastModified: "2026-11-05", // ⭐ අද දිනට වෙනස් කළා
       changeFrequency: "weekly",
       priority: 0.8,
     },
@@ -49,6 +49,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${baseUrl}/blog/freelance-invoice-example-what-to-include`,
       lastModified: "2026-11-04",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    // ⭐ අලුතෙන් එකතු කරපු පෝස්ට් එක
+    {
+      url: `${baseUrl}/blog/how-to-invoice-for-services`,
+      lastModified: "2026-11-05",
       changeFrequency: "monthly",
       priority: 0.8,
     },
