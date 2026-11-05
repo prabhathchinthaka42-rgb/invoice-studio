@@ -64,3 +64,23 @@ export async function getClients() {
 
   return { success: true, clients: data }
 }
+export async function deleteClient(clientId: string) {
+  const supabase = await createClient()
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', clientId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Error deleting client:', error)
+    return { error: error.message }
+  }
+
+  revalidatePath('/app')
+  return { success: true }
+}

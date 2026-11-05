@@ -11,7 +11,7 @@ import {
   getRemainingInvoices,
 } from "@/lib/plan-limits";
 import type { User } from "@supabase/supabase-js";
-import { saveClient, getClients } from "@/lib/actions/clients";
+import { saveClient, getClients, deleteClient } from "@/lib/actions/clients";
 
 // ============================================
 // Types
@@ -207,6 +207,7 @@ export default function Home() {
   const [savedInvoices, setSavedInvoices] = useState<SavedInvoice[]>([]);
   const [clients, setClients] = useState<SavedClient[]>([]);
   const [savingClient, setSavingClient] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<{id: string, name: string} | null>(null);
 
   const [copied, setCopied] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -400,6 +401,22 @@ export default function Home() {
       if (success && updatedClients) setClients(updatedClients);
     }
     setSavingClient(false);
+  };
+
+    const handleDeleteClient = async () => {
+    if (!clientToDelete) return;
+    const res = await deleteClient(clientToDelete.id);
+    if (res.success) {
+      setClients(clients.filter(c => c.id !== clientToDelete.id));
+      if (clientName === clientToDelete.name) {
+        setClientName("");
+        setClientAddress("");
+        setClientCity("");
+      }
+      setClientToDelete(null);
+    } else {
+      alert(res.error);
+    }
   };
 
   const saveCompany = async (newCompany: CompanyInfo) => {
@@ -782,23 +799,44 @@ ${company.paymentTerms}${watermark}`;
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Load Saved Client (Optional)
               </label>
-              <select
-                onChange={(e) => {
-                  const client = clients.find(c => c.id === e.target.value);
-                  if (client) {
-                    setClientName(client.name);
-                    setClientAddress(client.address);
-                    setClientCity(client.city || "");
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                defaultValue=""
-              >
-                <option value="" disabled>-- Choose a client --</option>
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <details className="relative group">
+                <summary className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white shadow-sm cursor-pointer list-none flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <span>-- Choose a client --</span>
+                  <span className="text-xs text-gray-500">▼</span>
+                </summary>
+                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {clients.length === 0 ? (
+                    <div className="p-3 text-sm text-gray-500 text-center">No saved clients yet.</div>
+                  ) : (
+                    clients.map(c => (
+                      <div key={c.id} className="flex justify-between items-center p-2 hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setClientName(c.name);
+                            setClientAddress(c.address);
+                            setClientCity(c.city || "");
+                            (e.currentTarget.closest('details') as HTMLDetailsElement).removeAttribute('open');
+                          }}
+                          className="flex-1 text-left text-sm text-gray-700 font-medium px-2 py-1"
+                        >
+                          {c.name}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setClientToDelete({ id: c.id, name: c.name });
+                          }}
+                          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                          title="Delete Client"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </details>
             </div>
 
             <div className="mb-4">
@@ -1330,6 +1368,33 @@ ${company.paymentTerms}${watermark}`;
             >
               Maybe later
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {clientToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div className="text-4xl mb-4">⚠️</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Client?</h3>
+            <p className="text-gray-600 mb-6 text-sm">
+              Are you sure you want to delete <strong className="text-gray-900">{clientToDelete.name}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setClientToDelete(null)} 
+                className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteClient} 
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-lg shadow-red-500/30"
+              >
+                Yes, Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
