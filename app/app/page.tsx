@@ -61,6 +61,7 @@ type SavedClient = {
   email: string;
   phone: string;
   address: string;
+  city: string;
 };
 
 type DBCompanyRow = {
@@ -384,13 +385,12 @@ export default function Home() {
     }
     setSavingClient(true);
     
-    const fullAddress = `${clientAddress}${clientCity ? `\n${clientCity}` : ""}`;
-    
     const res = await saveClient({
       name: clientName,
       email: "",
       phone: "",
-      address: fullAddress
+      address: clientAddress,
+      city: clientCity
     });
 
     if (res.error) {
@@ -788,7 +788,7 @@ ${company.paymentTerms}${watermark}`;
                   if (client) {
                     setClientName(client.name);
                     setClientAddress(client.address);
-                    setClientCity("");
+                    setClientCity(client.city || "");
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

@@ -9,6 +9,7 @@ export async function saveClient(clientData: {
   email: string;
   phone: string;
   address: string;
+  city: string;
 }) {
   const supabase = await createClient()
 
@@ -28,6 +29,7 @@ export async function saveClient(clientData: {
         email: clientData.email,
         phone: clientData.phone,
         address: clientData.address,
+        city: clientData.city,
       }
     ])
     .select()
