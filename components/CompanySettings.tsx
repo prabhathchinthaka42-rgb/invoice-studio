@@ -15,11 +15,16 @@ export type CompanyInfo = {
   plan: "free" | "pro";
 };
 
+type Service = { id: string; name: string; rate: number };
+
 type Props = {
   company: CompanyInfo;
   onSave: (company: CompanyInfo) => void;
   onClose: () => void;
   onUpgrade: () => void;
+  services: Service[];
+  onAddService: (name: string, rate: number) => Promise<void>;
+  onDeleteService: (id: string) => Promise<void>;
 };
 
 const MAX_LOGO_SIZE = 1 * 1024 * 1024; // 1 MB
@@ -29,10 +34,27 @@ export default function CompanySettings({
   onSave,
   onClose,
   onUpgrade,
+  services,
+  onAddService,
+  onDeleteService,
 }: Props) {
   const [form, setForm] = useState<CompanyInfo>(company);
   const [logoError, setLogoError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // අලුත් සර්විස් එකක් ඇතුලත් කරන්න අවශ්‍ය State
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceRate, setNewServiceRate] = useState("");
+  const [isAddingService, setIsAddingService] = useState(false);
+
+  const handleAddNewService = async () => {
+    if (!newServiceName || !newServiceRate) return;
+    setIsAddingService(true);
+    await onAddService(newServiceName, parseFloat(newServiceRate));
+    setNewServiceName("");
+    setNewServiceRate("");
+    setIsAddingService(false);
+  };
 
   const isPro = form.plan === "pro";
 
@@ -295,6 +317,69 @@ export default function CompanySettings({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+          </div>
+
+                    {/* Services Section */}
+          <div className="pt-4 border-t border-gray-200">
+            <p className="text-sm font-semibold text-gray-800 mb-3">
+              🛠️ Saved Services (Optional)
+            </p>
+            
+            {/* List of saved services */}
+            {services.length > 0 ? (
+              <div className="space-y-2 mb-4 max-h-40 overflow-y-auto pr-1">
+                {services.map((service) => (
+                  <div key={service.id} className="flex justify-between items-center p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">{service.name}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-600">${service.rate.toFixed(2)}</span>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteService(service.id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Delete Service"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 mb-4">No services saved yet. Add one below to speed up invoicing.</p>
+            )}
+
+            {/* Add new service form */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Service Name</label>
+                <input
+                  type="text"
+                  value={newServiceName}
+                  onChange={(e) => setNewServiceName(e.target.value)}
+                  placeholder="e.g. Web Design"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="w-24">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Rate ($)</label>
+                <input
+                  type="number"
+                  value={newServiceRate}
+                  onChange={(e) => setNewServiceRate(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleAddNewService}
+                disabled={isAddingService || !newServiceName || !newServiceRate}
+                className="px-4 py-2 bg-gray-800 text-white rounded-lg font-medium text-sm hover:bg-gray-900 disabled:opacity-50 transition-colors"
+              >
+                {isAddingService ? "..." : "+ Add"}
+              </button>
             </div>
           </div>
 

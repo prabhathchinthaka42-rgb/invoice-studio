@@ -12,6 +12,7 @@ import {
 } from "@/lib/plan-limits";
 import type { User } from "@supabase/supabase-js";
 import { saveClient, getClients, deleteClient } from "@/lib/actions/clients";
+import { getServices, saveService, deleteService } from "@/lib/actions/services";
 
 // ============================================
 // Types
@@ -206,7 +207,8 @@ export default function Home() {
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(null);
   const [savedInvoices, setSavedInvoices] = useState<SavedInvoice[]>([]);
   const [clients, setClients] = useState<SavedClient[]>([]);
-    const [savingClient, setSavingClient] = useState(false);
+  const [savingClient, setSavingClient] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<{id: string, name: string} | null>(null);
 
@@ -287,10 +289,23 @@ export default function Home() {
                 setClients(fetchedClients);
               }
             }
+              // Load Saved Services
+            if (currentUser) {
+              const { success: sSuccess, services: fetchedServices } = await getServices();
+              if (sSuccess && fetchedServices) {
+                setServices(fetchedServices);
+              }
+            }
             setIsLoaded(true);
     };
     load();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setShowAuthModal(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -424,8 +439,40 @@ export default function Home() {
     }
   };
 
+    const handleAddService = async (name: string, rate: number) => {
+    if (!user) {
+      setShowSettings(false);
+      setShowAuthModal(true);
+      return;
+    }
+    const res = await saveService({ name, rate });
+    if (res.success) {
+      const { success, services: fetched } = await getServices();
+      if (success && fetched) setServices(fetched);
+    } else {
+      alert(res.error);
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if (!user) {
+      setShowSettings(false);
+      setShowAuthModal(true);
+      return;
+    }
+    if (!confirm("Are you sure you want to delete this service?")) return;
+    const res = await deleteService(id);
+    if (res.success) {
+      setServices(services.filter(s => s.id !== id));
+    }
+  };
+
   const saveCompany = async (newCompany: CompanyInfo) => {
-    if (!user) return;
+    if (!user) {
+      setShowSettings(false);
+      setShowAuthModal(true);
+      return;
+    }
     setCompany(newCompany);
 
     const supabase = createClient();
@@ -997,8 +1044,42 @@ ${company.paymentTerms}${watermark}`;
                       updateItem(index, "description", e.target.value)
                     }
                     placeholder="Description (e.g. Web Design)"
-                    className="w-full px-3 py-2 mb-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
+                  <div className="relative mb-2">
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={(e) => updateItem(index, "description", e.target.value)}
+                      placeholder="Description (e.g. Web Design)"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    {services.length > 0 && (
+                      <select
+                        onChange={(e) => {
+                          const selected = services.find(s => s.id === e.target.value);
+                          if (selected) {
+                            // මෙතන අපි state එක එක පාරටම අප්ඩේට් කරනවා
+                            setItems(prev => prev.map((it, i) => 
+                              i === index ? { ...it, description: selected.name, rate: selected.rate } : it
+                            ));
+                          }
+                        }}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 opacity-0 cursor-pointer"
+                        defaultValue=""
+                        title="Auto-fill from saved services"
+                      >
+                        <option value="" disabled>Select</option>
+                        {services.map(s => (
+                          <option key={s.id} value={s.id}>{s.name} (${s.rate})</option>
+                        ))}
+                      </select>
+                    )}
+                    {services.length > 0 && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                        ⚡
+                      </div>
+                    )}
+                  </div>
 
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <input
@@ -1330,6 +1411,9 @@ ${company.paymentTerms}${watermark}`;
           onSave={saveCompany}
           onClose={() => setShowSettings(false)}
           onUpgrade={handleUpgrade}
+          services={services}
+          onAddService={handleAddService}
+          onDeleteService={handleDeleteService}
         />
       )}
 
