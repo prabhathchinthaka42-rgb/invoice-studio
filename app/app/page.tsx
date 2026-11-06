@@ -206,7 +206,8 @@ export default function Home() {
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(null);
   const [savedInvoices, setSavedInvoices] = useState<SavedInvoice[]>([]);
   const [clients, setClients] = useState<SavedClient[]>([]);
-  const [savingClient, setSavingClient] = useState(false);
+    const [savingClient, setSavingClient] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<{id: string, name: string} | null>(null);
 
   const [copied, setCopied] = useState(false);
@@ -380,6 +381,10 @@ export default function Home() {
   // Save Company
   // ============================================
   const handleSaveCurrentClient = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!clientName.trim()) {
       alert("Please enter a Client Name first.");
       return;
@@ -441,7 +446,8 @@ export default function Home() {
   // ============================================
   const saveInvoice = async () => {
     if (!user) {
-      window.location.href = "/login?redirect=/app";
+            setShowAuthModal(true);
+      return;
       return;
     }
 
@@ -610,7 +616,8 @@ export default function Home() {
     if (!invoiceRef.current) return;
 
     if (!user) {
-      window.location.href = "/login?redirect=/app";
+            setShowAuthModal(true);
+      return;
       return;
     }
 
@@ -1408,6 +1415,35 @@ ${company.paymentTerms}${watermark}`;
               >
                 Yes, Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign In Required Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center transform transition-all">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Sign In Required</h3>
+            <p className="text-gray-600 mb-6 text-sm">
+              You need to be logged in to save clients, generate invoices, and download PDFs. Don't worry, it's completely free!
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowAuthModal(false)} 
+                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <Link 
+                href="/login?redirect=/app" 
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
+              >
+                Sign In Now
+              </Link>
             </div>
           </div>
         </div>
