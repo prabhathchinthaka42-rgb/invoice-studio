@@ -441,7 +441,7 @@ export default function Home() {
   // ============================================
   const saveInvoice = async () => {
     if (!user) {
-      setError("You must be logged in to save");
+      window.location.href = "/login?redirect=/app";
       return;
     }
 
@@ -609,6 +609,11 @@ export default function Home() {
   const downloadPDF = async () => {
     if (!invoiceRef.current) return;
 
+    if (!user) {
+      window.location.href = "/login?redirect=/app";
+      return;
+    }
+
     if (!currentInvoiceId && !canSave) {
       setShowUpgradeModal(true);
       return;
@@ -622,7 +627,8 @@ export default function Home() {
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
-    html2pdf().set(opt).from(invoiceRef.current).save();
+    // මෙතන අන්තිමට ! ලකුණ දාලා තියෙනවා බලන්න
+    html2pdf().set(opt).from(invoiceRef.current!).save();
   };
 
   const copyInvoiceText = async () => {
@@ -734,6 +740,14 @@ ${company.paymentTerms}${watermark}`;
               <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg text-xs text-gray-700 font-medium">
                 ✨ Unlimited invoices
               </div>
+            )}
+            {!user && (
+              <Link
+                href="/login?redirect=/app"
+                className="text-sm px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/30"
+              >
+                🔑 Sign In
+              </Link>
             )}
             <Link
               href="/tools"

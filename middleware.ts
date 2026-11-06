@@ -34,18 +34,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes — login නැත්නම් /login එකට යවන්න
-  const isProtectedRoute =
-    request.nextUrl.pathname.startsWith("/app") &&
-    request.nextUrl.pathname !== "/app/test-supabase";
-
-  if (isProtectedRoute && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
   // Login කරලා ඉන්න user ට /login හෝ /signup යවන්න එපා
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
