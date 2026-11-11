@@ -59,5 +59,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+        {
+      url: `${baseUrl}/blog/word-vs-invoice-software`,
+      lastModified: "2026-11-11",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
   ];
 }
