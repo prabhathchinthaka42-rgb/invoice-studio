@@ -10,6 +10,57 @@ export type BlogPost = {
 
 export const BLOG_POSTS: BlogPost[] = [
     {
+    slug: "5-invoicing-mistakes",
+    title: "5 Invoicing Mistakes That Are Costing You Money",
+    description: "Discover the most common invoicing mistakes freelancers make and how to fix them to get paid faster.",
+    date: "November 12, 2026",
+    content: (
+      <div className="space-y-6 text-slate-300">
+        <p className="text-lg">
+          As a freelancer, your invoice is your lifeline. It’s how you get paid. But if you’re making these common invoicing mistakes, you’re not just losing time—you’re losing money.
+        </p>
+        <p>
+          Let’s look at the 5 biggest invoicing mistakes and how you can fix them today.
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">1. Waiting Too Long to Send the Invoice</h2>
+        <p>
+          The project is finished on Friday, but you don't send the invoice until the end of the month. This is a huge mistake. The longer you wait, the more likely the client will forget or deprioritize your payment. 
+          <strong>Fix:</strong> Send the invoice the moment the work is delivered.
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">2. Using Vague Line Items</h2>
+        <p>
+          If your invoice just says "Consulting - $500", the client might question it. They might forget exactly what you did. 
+          <strong>Fix:</strong> Be specific. Write "Marketing Strategy Consulting - 5 hours @ $100/hr". This shows exactly what they are paying for and reduces the chance of disputes.
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">3. Missing Payment Terms and Due Dates</h2>
+        <p>
+          If you don't tell the client *when* they need to pay, they will pay whenever they feel like it. You must always include a due date (e.g., "Net 14" meaning payment is due in 14 days).
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">4. Forgetting to Track Unpaid Invoices</h2>
+        <p>
+          Sending the invoice is only half the job. If the due date passes and the money isn't in your bank, you need to follow up. Many freelancers feel awkward chasing clients, but it's your hard-earned money!
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">5. Using Messy Word or Excel Templates</h2>
+        <p>
+          If your invoice looks like a messy spreadsheet or a broken Word document, it screams "unprofessional." A clean, modern PDF builds trust and shows the client you take your business seriously.
+        </p>
+
+        <div className="bg-blue-600/10 border border-blue-500/30 p-6 rounded-xl my-8">
+          <h3 className="text-xl font-bold text-white mb-3">Avoid all these mistakes automatically</h3>
+          <p className="mb-4">Invoice Studio ensures your invoices are professional, accurate, and sent on time. Save your client details once and generate perfect invoices in seconds.</p>
+          <Link href="/app" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+            Try Invoice Studio for Free
+          </Link>
+        </div>
+      </div>
+    ),
+  },
+    {
     slug: "how-to-invoice-for-services",
     title: "How to Invoice for Services: The Ultimate Guide",
     description: "Learn how to properly invoice for your services as a freelancer or agency. Discover what to include and how to get paid faster.",

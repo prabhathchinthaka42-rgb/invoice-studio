@@ -71,5 +71,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+        {
+      url: `${baseUrl}/blog/5-invoicing-mistakes`,
+      lastModified: "2026-11-12",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
   ];
 }
