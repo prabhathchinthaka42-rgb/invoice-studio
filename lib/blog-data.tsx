@@ -279,4 +279,112 @@ export const BLOG_POSTS: BlogPost[] = [
       </div>
     ),
   },
+    {
+    slug: "freelance-invoicing-checklist",
+    title: "The Ultimate Freelance Invoicing Checklist",
+    description: "Don't miss a single detail. Use this essential invoicing checklist to ensure your invoices are professional, legally compliant, and get paid on time.",
+    date: "November 11, 2026",
+    content: (
+      <div className="space-y-6 text-slate-300">
+        <p className="text-lg">
+          As a freelancer, sending an invoice isn't just about asking for money—it's about looking professional. If your invoice is missing key information, clients might delay payment, or you might face issues during tax season.
+        </p>
+        <p>
+          To make sure you never miss a detail, use this ultimate invoicing checklist before you hit "send."
+        </p>
+
+        <h2 className="text-2xl font-bold text-white mt-8 mb-4">The 10-Point Invoicing Checklist</h2>
+        
+        <div className="space-y-4 mt-6">
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">1. The Word "INVOICE"</h3>
+              <p className="text-sm text-slate-400">This sounds obvious, but make sure the document is clearly labeled as an invoice, not a receipt or a quote.</p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">2. Your Business Details</h3>
+              <p className="text-sm text-slate-400">Your name/company name, address, email, and phone number.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">3. Client's Details</h3>
+              <p className="text-sm text-slate-400">The legal name and address of the client (not just the project manager's name).</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">4. Unique Invoice Number</h3>
+              <p className="text-sm text-slate-400">A sequential number (e.g., INV-001) for your accounting records.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">5. Issue Date & Due Date</h3>
+              <p className="text-sm text-slate-400">Clearly state when the invoice was sent and when payment is expected (e.g., Net 14).</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">6. Detailed Line Items</h3>
+              <p className="text-sm text-slate-400">Don't just write "Consulting". Write "Marketing Strategy Session - 2 hours @ $100/hr".</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">7. Total Amount (with Taxes/Discounts)</h3>
+              <p className="text-sm text-slate-400">Make sure the math is correct and clearly displayed.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">8. Payment Instructions</h3>
+              <p className="text-sm text-slate-400">Provide your bank details, PayPal link, or Stripe link so they have no excuse to delay.</p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">9. Payment Terms</h3>
+              <p className="text-sm text-slate-400">Include any late fees or terms of service.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-green-400 text-xl">✅</span>
+            <div>
+              <h3 className="font-semibold text-white">10. Professional Format</h3>
+              <p className="text-sm text-slate-400">Send it as a clean, non-editable PDF.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-600/10 border border-blue-500/30 p-6 rounded-xl my-8">
+          <h3 className="text-xl font-bold text-white mb-3">Automate the Checklist</h3>
+          <p className="mb-4">Instead of checking this list manually every time, let software do it for you. Invoice Studio automatically includes all these elements in every PDF you generate.</p>
+          <Link href="/app" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+            Create Your First Invoice
+          </Link>
+        </div>
+      </div>
+    ),
+  },
 ];
