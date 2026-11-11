@@ -37,6 +37,7 @@ type SavedInvoice = {
   createdAt: number;
   deletedAt: number | null;
   currency: string; // ⭐ NEW
+  templateStyle: string;
 };
 
 type DBInvoiceRow = {
@@ -54,6 +55,7 @@ type DBInvoiceRow = {
   updated_at: string;
   deleted_at: string | null;
   currency: string; // ⭐ NEW
+  template_style: string; // ⭐ NEW
 };
 
 type SavedClient = {
@@ -152,6 +154,7 @@ function dbToSavedInvoice(row: DBInvoiceRow): SavedInvoice {
     createdAt: new Date(row.created_at).getTime(),
     deletedAt: row.deleted_at ? new Date(row.deleted_at).getTime() : null,
     currency: row.currency || "USD", // ⭐ NEW
+    templateStyle: row.template_style || "classic",
   };
 }
 
@@ -202,7 +205,8 @@ export default function Home() {
   const [invoiceNumber, setInvoiceNumber] = useState("INV-001");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [currency, setCurrency] = useState("USD"); // ⭐ NEW
+  const [currency, setCurrency] = useState("USD");
+  const [templateStyle, setTemplateStyle] = useState("classic"); // ⭐ NEW
   const [items, setItems] = useState<LineItem[]>(DEFAULT_ITEMS);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(null);
   const [savedInvoices, setSavedInvoices] = useState<SavedInvoice[]>([]);
@@ -315,7 +319,8 @@ export default function Home() {
     setInvoiceNumber("INV-001");
     setInvoiceDate("");
     setDueDate("");
-    setCurrency("USD"); // Reset currency
+    setCurrency("USD");
+    setTemplateStyle("classic"); // Reset currency
     setItems(DEFAULT_ITEMS);
     setCurrentInvoiceId(null);
     setError("");
@@ -516,6 +521,7 @@ export default function Home() {
       invoice_date: invoiceDate || null,
       due_date: dueDate || null,
       currency: currency, // ⭐ NEW
+      template_style: templateStyle,
       items,
       user_id: user.id,
     };
@@ -593,6 +599,7 @@ export default function Home() {
     setInvoiceDate(invoice.invoiceDate);
     setDueDate(invoice.dueDate);
     setCurrency(invoice.currency); // ⭐ NEW
+    setTemplateStyle(invoice.templateStyle || "classic");
     setItems(invoice.items);
     setCurrentInvoiceId(invoice.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -665,24 +672,33 @@ export default function Home() {
     if (!user) {
             setShowAuthModal(true);
       return;
-      return;
+      
     }
 
     if (!currentInvoiceId && !canSave) {
       setShowUpgradeModal(true);
       return;
     }
+    // අලුත් ලයිබ්‍රරි දෙක Import කිරීම
+    const html2canvas = (await import("html2canvas-pro")).default;
+    const { jsPDF } = await import("jspdf");
 
-    const html2pdf = (await import("html2pdf.js")).default;
-    const opt = {
-      margin: 0,
-      filename: `${invoiceNumber || "invoice"}.pdf`,
-      image: { type: "jpeg" as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
-    };
-    // මෙතන අන්තිමට ! ලකුණ දාලා තියෙනවා බලන්න
-    html2pdf().set(opt).from(invoiceRef.current!).save();
+    // 1. HTML Element එක Canvas එකකට හරවන්න
+    const canvas = await html2canvas(invoiceRef.current!, {
+      scale: 2,
+      useCORS: true,
+    });
+
+    // 2. Canvas එකේ Image එක ගන්න
+    const imgData = canvas.toDataURL("image/jpeg", 0.98);
+
+    // 3. A4 PDF එකක් හදලා ඒකට Image එක දාන්න
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`${invoiceNumber || "invoice"}.pdf`);
   };
 
   const copyInvoiceText = async () => {
@@ -985,6 +1001,21 @@ ${company.paymentTerms}${watermark}`;
               </div>
             </div>
 
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Template Style
+              </label>
+              <select
+                value={templateStyle}
+                onChange={(e) => setTemplateStyle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="classic">Classic (Default)</option>
+                <option value="modern">Modern Blue</option>
+                <option value="minimal">Minimal Clean</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1178,8 +1209,14 @@ ${company.paymentTerms}${watermark}`;
                 </div>
                 <div className="text-right">
                   <h1
-                    className="text-4xl font-bold tracking-tight"
-                    style={{ color: isPro ? company.brandColor : "#2563eb" }}
+                    className={`font-bold tracking-tight ${
+                      templateStyle === "modern"
+                        ? "text-3xl bg-slate-800 text-white px-4 py-2 rounded-lg"
+                        : templateStyle === "minimal"
+                        ? "text-3xl font-light text-gray-900"
+                        : "text-4xl"
+                    }`}
+                    style={{ color: templateStyle === "classic" ? (isPro ? company.brandColor : "#2563eb") : undefined }}
                   >
                     INVOICE
                   </h1>
@@ -1220,8 +1257,14 @@ ${company.paymentTerms}${watermark}`;
 
               <table className="w-full mb-6">
                 <thead>
-                  <tr className="border-b-2 border-gray-800">
-                    <th className="text-left py-3 text-xs uppercase tracking-wider font-semibold">
+                  <tr className={`${
+                    templateStyle === "modern" 
+                      ? "bg-slate-800 text-white" 
+                      : templateStyle === "minimal"
+                      ? "border-b border-gray-300 text-gray-500"
+                      : "border-b-2 border-gray-800"
+                  }`}>
+                    <th className={`text-left py-3 text-xs uppercase tracking-wider font-semibold ${templateStyle === "modern" ? "pl-3" : ""}`}>
                       Description
                     </th>
                     <th className="text-right py-3 text-xs uppercase tracking-wider font-semibold">
@@ -1230,7 +1273,7 @@ ${company.paymentTerms}${watermark}`;
                     <th className="text-right py-3 text-xs uppercase tracking-wider font-semibold">
                       Rate
                     </th>
-                    <th className="text-right py-3 text-xs uppercase tracking-wider font-semibold">
+                    <th className={`text-right py-3 text-xs uppercase tracking-wider font-semibold ${templateStyle === "modern" ? "pr-3" : ""}`}>
                       Amount
                     </th>
                   </tr>
