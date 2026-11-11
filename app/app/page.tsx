@@ -1143,10 +1143,17 @@ ${company.paymentTerms}${watermark}`;
               </button>
             </div>
 
-            <div
-              ref={invoiceRef}
-              className="pdf-invoice bg-white shadow-xl rounded-lg p-10 text-gray-900"
-            >
+            {/* Mobile Scroll Hint */}
+            <p className="text-center text-xs text-slate-400 mb-2 md:hidden">
+              ← Swipe to view full invoice →
+            </p>
+            
+            <div className="w-full overflow-x-auto pb-4">
+              <div className="min-w-[600px]">
+                <div
+                  ref={invoiceRef}
+                  className="pdf-invoice bg-white shadow-xl rounded-lg p-6 md:p-10 text-gray-900"
+                >
               <div className="flex justify-between items-start mb-10">
                 <div>
                   {company.logo && isPro && (
@@ -1309,6 +1316,8 @@ ${company.paymentTerms}${watermark}`;
                   </p>
                 </div>
               )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
