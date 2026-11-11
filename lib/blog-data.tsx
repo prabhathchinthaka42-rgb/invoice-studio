@@ -220,7 +220,7 @@ export const BLOG_POSTS: BlogPost[] = [
     {
     slug: "freelance-invoice-example-what-to-include",
     title: "Freelance Invoice Example: What to Include",
-    description: "Learn exactly what to include in your freelance invoice with a clear example. Ensure you get paid on time, every time.",
+    description: "Learn exactly what to include in your freelance invoice with a clear example. Help reduce delays and get paid faster.",
     date: "November 4, 2026",
     content: (
       <div className="space-y-6 text-slate-300">
@@ -333,7 +333,7 @@ export const BLOG_POSTS: BlogPost[] = [
     {
     slug: "freelance-invoicing-checklist",
     title: "The Ultimate Freelance Invoicing Checklist",
-    description: "Don't miss a single detail. Use this essential invoicing checklist to ensure your invoices are professional, legally compliant, and get paid on time.",
+    description: "Don't miss a single detail. Use this essential invoicing checklist to ensure your invoices are professional, clear, and help you get paid on time.",
     date: "November 11, 2026",
     content: (
       <div className="space-y-6 text-slate-300">
@@ -430,7 +430,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
         <div className="bg-blue-600/10 border border-blue-500/30 p-6 rounded-xl my-8">
           <h3 className="text-xl font-bold text-white mb-3">Automate the Checklist</h3>
-          <p className="mb-4">Instead of checking this list manually every time, let software do it for you. Invoice Studio automatically includes all these elements in every PDF you generate.</p>
+          <p className="mb-4">Instead of checking this list manually every time, let software help you. Invoice Studio handles the layout, auto-calculates totals, and formats your invoice into a professional PDF, so you can focus on the details that matter.</p>
           <Link href="/app" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
             Create Your First Invoice
           </Link>

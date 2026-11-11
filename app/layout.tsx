@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s | Invoice Studio",
   },
   description:
-    "Create professional invoices in seconds. Free to start, no signup required. Built for freelancers and small businesses.",
+    "Create professional invoices in seconds. Free to start. Built for freelancers and small businesses.",
   keywords: [
     "invoice generator",
     "free invoice",

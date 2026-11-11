@@ -8,7 +8,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/app", "/app/"],
+        // /app එකට ඇතුල් වෙන්න ඉඩ දෙනවා, ඒත් index වෙන්නේ නෑ (noindex ටැග් එකෙන්)
+        disallow: ["/api/", "/_next/"], 
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

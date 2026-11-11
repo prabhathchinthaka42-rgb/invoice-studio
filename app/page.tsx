@@ -42,7 +42,7 @@ export default function HomePage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
             </span>
-            Free to start · No credit card required
+            Free to start · Sign in to download PDF
           </div>
 
           {/* Main Heading */}
@@ -60,13 +60,13 @@ export default function HomePage() {
             Set Up Once, Generate in Seconds
           </p>
 
-          <p className="text-base text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed">
+          <p className="text-base text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
             Professional invoices for freelancers and small businesses.
             Fast, simple, and ready in seconds — no complicated setup.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex gap-4 justify-center flex-wrap">
+          <div className="flex gap-4 justify-center flex-wrap mb-16">
             <Link
               href="/app"
               className="group relative px-8 py-4 bg-white text-slate-900 font-semibold rounded-lg hover:bg-blue-50 transition-all hover:scale-[1.03] shadow-2xl shadow-blue-500/30"
@@ -86,13 +86,27 @@ export default function HomePage() {
             </Link>
           </div>
 
+          {/* App Preview Image */}
+          <div className="mt-10 relative mx-auto max-w-4xl px-4">
+            {/* ඉමේජ් එක වටේට එන ලස්සන Glow එක */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20 pointer-events-none"></div>
+            
+            <div className="relative bg-slate-900 border border-white/10 rounded-2xl p-2 shadow-2xl">
+              <img
+                src="/app-preview.png" // ඔබ සේව් කරපු ඉමේජ් එකේ නම මෙතන දාන්න
+                alt="Invoice Studio App Interface"
+                className="rounded-xl w-full object-cover border border-white/5"
+              />
+            </div>
+          </div>
+
           {/* Trust indicators */}
-          <div className="flex items-center justify-center gap-8 mt-16 text-sm text-slate-500 flex-wrap">
+          <div className="flex items-center justify-center gap-8 mt-16 text-sm text-slate-400 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-green-400">✓</span> Free to try
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-green-400">✓</span> No credit card
+              <span className="text-green-400">✓</span> Sign in to download
             </div>
             <div className="flex items-center gap-2">
               <span className="text-green-400">✓</span> Instant PDF
@@ -111,7 +125,7 @@ export default function HomePage() {
               <br />
               <span className="text-slate-500">Nothing you don't.</span>
             </h2>
-            <p className="text-slate-500 max-w-xl mx-auto">
+            <p className="text-slate-400 max-w-xl mx-auto">
               Built for speed and simplicity — so you can focus on your work,
               not your invoice software.
             </p>
@@ -123,7 +137,7 @@ export default function HomePage() {
                 <span className="text-2xl">⚡</span>
               </div>
               <h3 className="text-lg font-semibold mb-2">Lightning Fast</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-300 leading-relaxed">
                 Set up your company once. Generate professional invoices in
                 under 5 seconds — no forms to refill, no data to re-enter.
               </p>
@@ -134,7 +148,7 @@ export default function HomePage() {
                 <span className="text-2xl">🔒</span>
               </div>
               <h3 className="text-lg font-semibold mb-2">Privacy First</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-300 leading-relaxed">
                 Your data stays in your browser. No tracking, no selling your
                 information — complete control over your business data.
               </p>
@@ -161,9 +175,8 @@ export default function HomePage() {
               <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">
                 Ready to try it?
               </h2>
-              <p className="text-slate-400 mb-8 max-w-md mx-auto">
-                No credit card required. No signup needed to start. Just open
-                the app and create your first invoice in seconds.
+              <p className="text-slate-300 mb-8 max-w-md mx-auto">
+                No credit card required. Create and preview your invoice for free. Just open the app, set up once, and sign in to download your professional PDF.
               </p>
               <Link
                 href="/app"
