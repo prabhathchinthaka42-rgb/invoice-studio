@@ -71,12 +71,11 @@ function LoginForm() {
             href="/"
             className="flex items-center justify-center gap-2 mb-8 group"
           >
-            <span className="text-3xl group-hover:scale-110 transition-transform">
-              🧾
-            </span>
-            <span className="font-bold text-xl tracking-tight">
-              Invoice Studio
-            </span>
+            <img 
+              src="/logo.png" 
+              alt="Invoice Studio" 
+              className="h-24 w-auto object-contain group-hover:scale-105 transition-transform" 
+            />
           </Link>
 
           {/* Card */}

@@ -762,9 +762,11 @@ ${company.paymentTerms}${watermark}`;
         <div className="mb-8 flex justify-between items-start flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-white">
-                🧾 Invoice Studio
-              </h1>
+              <img 
+                src="/logo.png" 
+                alt="Invoice Studio" 
+                className="h-16 w-auto object-contain" 
+              />
               {isPro ? (
                 <span className="text-xs px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold">
                   ⭐ PRO

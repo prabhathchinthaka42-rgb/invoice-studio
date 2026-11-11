@@ -42,12 +42,11 @@ export default function Navbar() {
     <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 group">
-        <span className="text-2xl group-hover:scale-110 transition-transform">
-          🧾
-        </span>
-        <span className="font-bold text-lg tracking-tight">
-          Invoice Studio
-        </span>
+        <img 
+          src="/logo.png" 
+          alt="Invoice Studio" 
+          className="h-14 w-auto object-contain" 
+        />
       </Link>
 
       {/* Center Links */}

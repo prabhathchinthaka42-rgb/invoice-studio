@@ -41,13 +41,23 @@ export const metadata: Metadata = {
     siteName: "Invoice Studio",
     title: "Invoice Studio — Invoices in Seconds",
     description:
-      "Create professional invoices in seconds. Free to start, no signup required.",
+      "Create professional invoices in seconds. Free to start.",
+    url: "https://www.invoice-studio.app",
+    images: [
+      {
+        url: "/og-image.png", // ⚠️ ඔබ ඉමේජ් එක සේව් කරපු නම මෙතන දාන්න (jpg නම් .jpg කියලා)
+        width: 1200,
+        height: 630,
+        alt: "Invoice Studio App Preview",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Invoice Studio — Invoices in Seconds",
     description:
-      "Create professional invoices in seconds. Free to start, no signup required.",
+      "Create professional invoices in seconds. Free to start.",
+    images: ["/og-image.png"], // ⚠️ මෙතනත් ඔබේ ඉමේජ් එකේ නමම දාන්න
   },
   robots: {
     index: true,
@@ -63,7 +73,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
     description:
-      "Create professional invoices in seconds. Free to start, no signup required.",
+      "Create professional invoices in seconds. Free to start.",
     offers: {
       "@type": "Offer",
       price: "0",
