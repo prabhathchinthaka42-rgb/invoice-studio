@@ -1230,7 +1230,7 @@ ${company.paymentTerms}${watermark}`;
 
             <div className="relative">
               <div className="invoice-scroll overflow-x-auto pb-3">
-                <div className="min-w-[600px]">
+                <div className="min-w-[550px] sm:min-w-[600px]">
                   {/* ⭐ මෙතනින් ref={invoiceRef} අයින් කළා */}
                   <div className="pdf-invoice overflow-hidden rounded-xl bg-white shadow-xl shadow-black/30 text-gray-900">
                     <InvoiceDocument
@@ -1250,8 +1250,6 @@ ${company.paymentTerms}${watermark}`;
                   </div>
                 </div>
               </div>
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-slate-900 to-transparent md:hidden" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-slate-900 to-transparent md:hidden" />
             </div>
           </div>
         </div>
