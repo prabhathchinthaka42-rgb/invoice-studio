@@ -226,6 +226,8 @@ function companyToDb(company: CompanyInfo, userId: string) {
 // ============================================
 export default function Home() {
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(0.7);
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [user, setUser] = useState<User | null>(null);
@@ -275,6 +277,22 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const updateScale = () => {
+      if (previewContainerRef.current) {
+        const containerWidth = previewContainerRef.current.clientWidth;
+        const padding = 48; // p-6 (24px left + 24px right)
+        const availableWidth = containerWidth - padding;
+        const newScale = Math.min(availableWidth / 794, 1); // A4 width is 794px
+        if (newScale > 0) setPreviewScale(newScale);
+      }
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, [isLoaded]);
+
+  useEffect(() => {
     const load = async () => {
       const supabase = createClient();
       const {
@@ -318,13 +336,11 @@ export default function Home() {
           }
         }
 
-        // Load Saved Clients
         const { success, clients: fetchedClients } = await getClients();
         if (success && fetchedClients) {
           setClients(fetchedClients);
         }
 
-        // Load Saved Services
         const { success: sSuccess, services: fetchedServices } = await getServices();
         if (sSuccess && fetchedServices) {
           setServices(fetchedServices);
@@ -356,7 +372,6 @@ export default function Home() {
     setError("");
   }, [user?.id, isLoaded]);
 
-  // Item Handlers
   const updateItem = (
     index: number,
     field: keyof LineItem,
@@ -384,7 +399,6 @@ export default function Home() {
     0
   );
 
-  // Upgrade Handler
   const handleUpgrade = async () => {
     if (!user?.email) {
       alert("Please sign in first");
@@ -396,21 +410,12 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          product_cart: [
-            {
-              product_id: DODO_PRODUCT_ID,
-              quantity: 1,
-            },
-          ],
-          customer: {
-            email: user.email,
-          },
+          product_cart: [{ product_id: DODO_PRODUCT_ID, quantity: 1 }],
+          customer: { email: user.email },
         }),
       });
 
       const data = await response.json();
-      console.log("Checkout response:", data);
-
       const checkoutUrl = data.checkout_url || data.url;
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
@@ -423,7 +428,6 @@ export default function Home() {
     }
   };
 
-  // Save Company & Clients
   const handleSaveCurrentClient = async () => {
     if (!user) {
       setShowAuthModal(true);
@@ -517,7 +521,6 @@ export default function Home() {
     }
   };
 
-  // Save Invoice
   const saveInvoice = async () => {
     if (!user) {
       setShowAuthModal(true);
@@ -586,7 +589,7 @@ export default function Home() {
       setTimeout(() => setJustSaved(false), 2000);
     } catch (err: any) {
       console.error("Save failed:", err);
-      const errorMessage = err?.message || err?.details || JSON.stringify(err) || "Failed to save invoice. Please check your database connection.";
+      const errorMessage = err?.message || err?.details || JSON.stringify(err) || "Failed to save invoice.";
       setError(errorMessage);
     } finally {
       setSaving(false);
@@ -689,7 +692,6 @@ export default function Home() {
     }
   };
 
-  // PDF Download
   const downloadPDF = async () => {
     if (!invoiceRef.current) return;
 
@@ -708,7 +710,6 @@ export default function Home() {
       const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
 
-      // Capture the hidden, clean DOM element
       const canvas = await html2canvas(invoiceRef.current!, {
         scale: 2,
         useCORS: true,
@@ -766,7 +767,6 @@ ${company.paymentTerms}${watermark}`;
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Loading State
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -1190,7 +1190,7 @@ ${company.paymentTerms}${watermark}`;
             </div>
           </div>
 
-          {/* RIGHT: Invoice Document Preview (Only for visual) */}
+          {/* RIGHT: Invoice Document Preview */}
           <div className={`${CARD_CLASS} p-4 sm:p-6`}>
             <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
@@ -1224,30 +1224,43 @@ ${company.paymentTerms}${watermark}`;
               </div>
             </div>
 
-            <p className="text-center text-xs text-slate-500 mb-2 md:hidden">
-              ← Swipe to view full invoice →
-            </p>
-
-            <div className="relative">
-              <div className="invoice-scroll overflow-x-auto pb-3">
-                <div className="min-w-[550px] sm:min-w-[600px]">
-                  {/* ⭐ මෙතනින් ref={invoiceRef} අයින් කළා */}
-                  <div className="pdf-invoice overflow-hidden rounded-xl bg-white shadow-xl shadow-black/30 text-gray-900">
-                    <InvoiceDocument
-                      company={company}
-                      isPro={isPro}
-                      clientName={clientName}
-                      clientAddress={clientAddress}
-                      clientCity={clientCity}
-                      invoiceNumber={invoiceNumber}
-                      invoiceDate={invoiceDate}
-                      dueDate={dueDate}
-                      currency={currency}
-                      templateStyle={templateStyle}
-                      items={items}
-                      total={total}
-                    />
-                  </div>
+            {/* Auto-Scaling Invoice Preview Container */}
+            <div 
+              ref={previewContainerRef}
+              className="relative w-full overflow-hidden bg-slate-800/50 rounded-xl border border-slate-700/50 flex justify-center p-4 sm:p-6 h-[600px] md:h-[800px] shadow-inner"
+            >
+              <div style={{
+                width: `${794 * previewScale}px`,
+                height: `${1123 * previewScale}px`,
+                position: 'relative',
+                flexShrink: 0,
+              }}>
+                <div 
+                  className="pdf-invoice bg-white text-gray-900 shadow-2xl rounded-sm"
+                  style={{ 
+                    transform: `scale(${previewScale})`, 
+                    transformOrigin: "top left",
+                    width: "794px",
+                    minHeight: "1123px",
+                    position: 'absolute',
+                    top: 0,
+                    left: 0
+                  }}
+                >
+                  <InvoiceDocument
+                    company={company}
+                    isPro={isPro}
+                    clientName={clientName}
+                    clientAddress={clientAddress}
+                    clientCity={clientCity}
+                    invoiceNumber={invoiceNumber}
+                    invoiceDate={invoiceDate}
+                    dueDate={dueDate}
+                    currency={currency}
+                    templateStyle={templateStyle}
+                    items={items}
+                    total={total}
+                  />
                 </div>
               </div>
             </div>
@@ -1345,12 +1358,12 @@ ${company.paymentTerms}${watermark}`;
         </p>
       </div>
 
-      {/* ⭐ මෙන්න මේකයි අලුත් වැඩේ: PDF එක හදන්න විතරක් පේන්නෙ නැති විදිහට හදපු Div එක */}
+      {/* Hidden Div for PDF Generation */}
       <div style={{ position: "absolute", top: "-10000px", left: "-10000px", pointerEvents: "none", zIndex: -1 }}>
         <div
           ref={invoiceRef}
           className="pdf-invoice bg-white"
-          style={{ width: "794px" }} // Standard A4 width
+          style={{ width: "794px" }}
         >
           <InvoiceDocument
             company={company}
@@ -1876,10 +1889,8 @@ function CorporateTemplate(props: InvoiceDocProps) {
   const accent = isPro ? company.brandColor : "#2563eb";
   return (
     <div className="bg-white text-gray-900">
-      {/* Top accent bar */}
       <div className="h-1.5" style={{ background: accent }} />
 
-      {/* Navy header */}
       <div className="bg-slate-900 text-white px-8 md:px-10 py-8">
         <div className="flex flex-col sm:flex-row justify-between gap-6">
           <div>
@@ -1905,7 +1916,6 @@ function CorporateTemplate(props: InvoiceDocProps) {
         </div>
       </div>
 
-      {/* Body */}
       <div className="px-8 md:px-10 py-8">
         <div className="grid grid-cols-2 gap-6 mb-8">
           <div>
@@ -1967,7 +1977,6 @@ function CreativeTemplate(props: InvoiceDocProps) {
   const { company, isPro, clientName, clientAddress, clientCity, invoiceNumber, invoiceDate, dueDate, currency, items, total } = props;
   return (
     <div className="bg-white text-gray-900 flex">
-      {/* Colorful accent sidebar */}
       <div className="w-14 sm:w-16 shrink-0 bg-gradient-to-b from-blue-600 via-purple-600 to-fuchsia-500" />
 
       <div className="flex-1 min-w-0 p-6 md:p-10">
